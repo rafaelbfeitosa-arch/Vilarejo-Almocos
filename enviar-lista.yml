@@ -1,0 +1,18 @@
+name: Enviar lista de almoços
+
+on:
+  schedule:
+    - cron: '1 11 * * 1-5'  # 11h01 UTC = 8h01 horário de Recife (UTC-3)
+  workflow_dispatch:          # permite disparar manualmente pelo GitHub se precisar
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar API de envio
+        run: |
+          curl -s -X POST "${{ secrets.API_URL }}/enviar-lista" \
+            -H "X-Secret: ${{ secrets.LISTA_SECRET }}" \
+            --fail \
+            && echo "Lista enviada com sucesso" \
+            || echo "Erro ao enviar lista"
