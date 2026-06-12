@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Almoço Escolar · Vilarejo</title>
+  <style>
+    :root {
+      --brand: #1a7f5a;
+      --brand-dark: #0f6e56;
+      --brand-light: #e1f5ee;
+      --bg: #F9FAFB;
+      --card: #FFFFFF;
+      --text: #111827;
+      --muted: #6B7280;
+      --border: #E5E7EB;
+      --red: #EF4444;
+      --red-bg: #FEF2F2;
+      --amber: #D97706;
+      --amber-bg: #FFFBEB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--bg); color: var(--text); min-height: 100vh; }
+    .app  { max-width: 460px; margin: 0 auto; min-height: 100vh; background: var(--card); }
+
+    /* Header */
+    header { background: var(--brand); color: #fff; padding: 20px 20px 22px; }
+    header h1 { font-size: 21px; font-weight: 700; }
+    header p  { font-size: 13px; opacity: .85; margin-top: 2px; }
+    .back-btn { display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+                background: none; border: none; color: #fff; font-size: 14px;
+                cursor: pointer; opacity: .9; padding: 0; }
+    .back-btn:hover { opacity: 1; }
+
+    /* Screens */
+    .screen { display: none; padding: 24px 20px; }
+    .screen.active { display: block; }
+
+    /* Seleção por turma/nome — tela home */
+    .sel-label { font-size: 12px; font-weight: 600; color: var(--muted);
+                 text-transform: uppercase; letter-spacing: .05em;
+                 display: block; margin-bottom: 6px; }
+    select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+             border-radius: 10px; font-size: 16px; background: var(--card);
+             color: var(--text); outline: none; appearance: none;
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+             background-repeat: no-repeat; background-position: right 14px center; }
+    select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(26,127,90,.15); }
+    select:disabled { opacity: .45; cursor: not-allowed; }
+
+    .field { margin-bottom: 16px; }
+    .field input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+                   border-radius: 10px; font-size: 16px; background: var(--card);
+                   color: var(--text); outline: none; }
+    .field input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(26,127,90,.15); }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+    .divider-label { display: flex; align-items: center; gap: 10px; margin: 20px 0; }
+    .divider-label::before, .divider-label::after { content:''; flex:1; height:1px; background:var(--border); }
+    .divider-label span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+    /* Buttons */
+    .btn { display: block; width: 100%; padding: 13px; border-radius: 10px;
+           font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; border: none; }
+    .btn + .btn { margin-top: 10px; }
+    .btn-primary  { background: var(--brand); color: #fff; }
+    .btn-primary:active { background: var(--brand-dark); }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+
+    /* Profile */
+    .avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--brand-light);
+              color: var(--brand-dark); display: flex; align-items: center; justify-content: center;
+              font-size: 20px; font-weight: 700; margin: 8px auto 12px; }
+    .p-nome { text-align: center; font-size: 20px; font-weight: 700; }
+    .p-sub  { text-align: center; font-size: 14px; color: var(--muted); margin-top: 4px 0 20px; }
+
+    /* Dias */
+    .dia-card { border: 1.5px solid var(--border); border-radius: 10px;
+                padding: 12px 14px; margin-bottom: 8px;
+                display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .dia-card.confirmado  { border-color: var(--brand); background: var(--brand-light); }
+    .dia-card.cancelado   { opacity: .55; }
+    .dia-info { flex: 1; }
+    .dia-nome { font-size: 15px; font-weight: 600; }
+    .dia-data { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .dia-tipo { font-size: 12px; font-weight: 500; margin-top: 3px; }
+    .tag { font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+    .tag-sim { background: var(--brand-light); color: var(--brand-dark); }
+    .tag-nao { background: var(--bg); color: var(--muted); }
+    .tag-veg { background: var(--brand-light); color: var(--brand-dark); }
+    .tag-trad{ background: var(--amber-bg); color: var(--amber); }
+    .tag-marm{ background: #F3E8FF; color: #6B21A8; }
+    .toggle-btn { padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;
+                  cursor: pointer; border: 1.5px solid var(--border); background: var(--bg);
+                  color: var(--muted); white-space: nowrap; }
+    .toggle-btn.on  { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .toggle-btn.off { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+    .toggle-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* Segmented */
+    .seg { display: flex; border: 1.5px solid var(--border); border-radius: 10px;
+           overflow: hidden; margin-bottom: 16px; }
+    .seg button { flex: 1; padding: 10px 8px; font-size: 14px; font-weight: 500;
+                  border: none; background: transparent; color: var(--muted); cursor: pointer; }
+    .seg button.on { background: var(--brand); color: #fff; }
+
+    /* Days grid */
+    .days-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 12px; }
+    .day-opt input { display: none; }
+    .day-opt label { display: flex; align-items: center; justify-content: center;
+                     height: 42px; border-radius: 8px; border: 1.5px solid var(--border);
+                     font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); }
+    .day-opt input:checked + label { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+    /* Avulso */
+    .avulso-row { display: flex; align-items: center; justify-content: space-between;
+                  padding: 10px 12px; background: var(--bg); border-radius: 8px; margin-bottom: 6px; }
+    .avulso-del { background: none; border: none; cursor: pointer; color: var(--muted);
+                  font-size: 16px; padding: 4px 8px; border-radius: 6px; line-height: 1; }
+    .avulso-del:hover { color: var(--red); background: var(--red-bg); }
+
+    .hint  { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 20px 0; }
+    .alert { padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; }
+    .alert-err { background: var(--red-bg); color: #991B1B; }
+    .alert-ok  { background: var(--brand-light); color: var(--brand-dark); }
+    .loading   { text-align: center; color: var(--muted); padding: 32px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header id="header">
+    <h1>🍽 Almoço Escolar</h1>
+    <p>Escola Vilarejo</p>
+  </header>
+
+  <!-- TELA: HOME -->
+  <div class="screen active" id="tela-home">
+
+    <!-- Seleção turma → nome -->
+    <div style="margin-bottom:6px;margin-top:4px">
+      <label class="sel-label">Turma</label>
+      <select id="sel-turma" onchange="carregarNomes()">
+        <option value="">Selecione a turma...</option>
+        <option>Maternal</option>
+        <option>Jardim</option>
+        <option>1º ano</option>
+        <option>2º ano</option>
+        <option>3º ano</option>
+      </select>
+    </div>
+
+    <div class="field" style="margin-top:14px">
+      <label class="sel-label">Criança</label>
+      <select id="sel-nome" disabled>
+        <option value="">Selecione a turma primeiro...</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="btn-acessar" onclick="acessarCrianca()" disabled>
+      Editar almoço
+    </button>
+
+    <div class="divider-label"><span>ou cadastre um novo aluno</span></div>
+
+    <div class="field">
+      <label class="sel-label">Nome completo</label>
+      <input type="text" id="cad-nome-home" placeholder="Digite o nome da criança..."
+             autocomplete="off" autocorrect="off">
+    </div>
+    <button class="btn btn-secondary" onclick="irCadastrar()">
+      ✏️ Cadastrar nova criança
+    </button>
+
+  </div>
+
+  <!-- TELA: PERFIL (dias da semana) -->
+  <div class="screen" id="tela-perfil">
+    <div class="avatar" id="p-avatar"></div>
+    <div class="p-nome" id="p-nome"></div>
+    <div class="p-sub"  id="p-sub" style="margin-bottom:14px"></div>
+
+    <div style="background:#FFFBEB;border-left:3px solid #D97706;
+                border-radius:6px;padding:10px 12px;margin-bottom:18px;
+                font-size:12.5px;line-height:1.45;color:#78350F">
+      <strong style="display:block;margin-bottom:3px">📅 Esta tela mostra os próximos 5 dias</strong>
+      Confirme ou cancele cada dia <strong>individualmente</strong>. Cancelar uma terça aqui
+      <strong>não afeta</strong> as outras terças — é só pra esse dia específico.
+      Para mudar os dias fixos de toda semana, use o botão
+      <strong>⚙️ Editar dias fixos</strong> mais abaixo.<br><br>
+      ⏰ <strong>Sem limite de horário:</strong> você pode editar a qualquer momento.
+    </div>
+
+    <div id="p-dias" class="loading">⏳ Carregando...</div>
+    <div class="divider"></div>
+    <button class="btn btn-secondary" onclick="irPara('tela-home')">← Voltar</button>
+  </div>
+
+  <!-- TELA: EDITAR DIAS FIXOS -->
+  <div class="screen" id="tela-editar-dias">
+    <p style="font-size:14px;color:var(--muted);margin-bottom:20px">
+      Selecione os dias em que seu filho almoça toda semana.
+    </p>
+    <label class="sel-label" style="margin-bottom:10px">Dias da semana</label>
+    <div class="days-grid">
+      <div class="day-opt"><input type="checkbox" id="e1" value="Segunda"><label for="e1">Seg</label></div>
+      <div class="day-opt"><input type="checkbox" id="e2" value="Terca"  ><label for="e2">Ter</label></div>
+      <div class="day-opt"><input type="checkbox" id="e3" value="Quarta" ><label for="e3">Qua</label></div>
+      <div class="day-opt"><input type="checkbox" id="e4" value="Quinta" ><label for="e4">Qui</label></div>
+      <div class="day-opt"><input type="checkbox" id="e5" value="Sexta"  ><label for="e5">Sex</label></div>
+    </div>
+    <label class="sel-label" style="margin-bottom:8px">Tipo de refeição padrão</label>
+    <div class="seg" id="seg-tipo-editar">
+      <button class="on" onclick="setTipoEditar('tradicional',this)" style="font-size:13px">🍖 Tradicional</button>
+      <button           onclick="setTipoEditar('vegano',this)"      style="font-size:13px">🥦 Vegano</button>
+      <button           onclick="setTipoEditar('marmita',this)"     style="font-size:13px">🍱 Marmita</button>
+    </div>
+    <p class="hint" style="font-size:11.5px;margin:6px 0 12px">Marmita = criança traz comida de casa.</p>
+    <button class="btn btn-primary" onclick="salvarDias()">💾 Salvar alterações</button>
+    <button class="btn btn-secondary" onclick="irPara('tela-perfil')" style="margin-top:10px">← Cancelar</button>
+  </div>
+
+  <!-- TELA: PEDIR AVULSA -->
+  <div class="screen" id="tela-avulsa">
+    <p class="hint" style="margin-bottom:20px">
+      Peça uma quentinha para uma data específica nos próximos <strong>5 dias úteis</strong>. <strong>Não altera seus dias fixos.</strong>
+    </p>
+    <div class="field">
+      <label class="sel-label">Data desejada</label>
+      <input type="date" id="avulsa-data">
+    </div>
+    <div class="seg" id="seg-tipo-avulsa">
+      <button class="on" onclick="setTipoAvulsa('tradicional',this)" style="font-size:13px">🍖 Tradicional</button>
+      <button           onclick="setTipoAvulsa('vegano',this)"      style="font-size:13px">🥦 Vegano</button>
+      <button           onclick="setTipoAvulsa('marmita',this)"     style="font-size:13px">🍱 Marmita</button>
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label class="sel-label">Quantidade</label>
+      <div class="seg" id="seg-qtd-avulsa">
+        <button class="on" onclick="setQtdAvulsa(1,this)" style="font-size:14px">1</button>
+        <button           onclick="setQtdAvulsa(2,this)" style="font-size:14px">2</button>
+        <button           onclick="setQtdAvulsa(3,this)" style="font-size:14px">3</button>
+        <button           onclick="setQtdAvulsa(4,this)" style="font-size:14px">4</button>
+        <button           onclick="setQtdAvulsa(5,this)" style="font-size:14px">5</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="pedirAvulsa()">Confirmar pedido de quentinha</button>
+    <div class="divider"></div>
+    <p class="sel-label" style="margin-bottom:10px">Seus pedidos avulsos</p>
+    <div id="avulsa-lista"></div>
+    <button class="btn btn-secondary" onclick="irPara('tela-perfil')" style="margin-top:10px">← Voltar</button>
+  </div>
+
+  <!-- TELA: CADASTRAR -->
+  <div class="screen" id="tela-cadastrar">
+    <div id="cad-alert"></div>
+    <div class="field">
+      <label class="sel-label">Nome completo</label>
+      <input type="text" id="cad-nome" placeholder="Nome da criança">
+    </div>
+    <div class="field">
+      <label class="sel-label">Turma</label>
+      <div class="seg" id="seg-turma-cad">
+        <button class="on" onclick="setCadTurma('Maternal',this)" style="font-size:13px">Maternal</button>
+        <button           onclick="setCadTurma('Jardim',this)"   style="font-size:13px">Jardim</button>
+        <button           onclick="setCadTurma('1º ano',this)"   style="font-size:13px">1º ano</button>
+        <button           onclick="setCadTurma('2º ano',this)"   style="font-size:13px">2º ano</button>
+        <button           onclick="setCadTurma('3º ano',this)"   style="font-size:13px">3º ano</button>
+      </div>
+    </div>
+    <label class="sel-label" style="margin-bottom:10px">Dias fixos de almoço</label>
+    <div class="days-grid">
+      <div class="day-opt"><input type="checkbox" id="c1" value="Segunda"><label for="c1">Seg</label></div>
+      <div class="day-opt"><input type="checkbox" id="c2" value="Terca"  ><label for="c2">Ter</label></div>
+      <div class="day-opt"><input type="checkbox" id="c3" value="Quarta" ><label for="c3">Qua</label></div>
+      <div class="day-opt"><input type="checkbox" id="c4" value="Quinta" ><label for="c4">Qui</label></div>
+      <div class="day-opt"><input type="checkbox" id="c5" value="Sexta"  ><label for="c5">Sex</label></div>
+    </div>
+    <label class="sel-label" style="margin-bottom:8px">Tipo de refeição padrão</label>
+    <div class="seg" id="seg-tipo-cad">
+      <button class="on" onclick="setTipoCad('tradicional',this)" style="font-size:13px">🍖 Tradicional</button>
+      <button           onclick="setTipoCad('vegano',this)"      style="font-size:13px">🥦 Vegano</button>
+      <button           onclick="setTipoCad('marmita',this)"     style="font-size:13px">🍱 Marmita</button>
+    </div>
+    <p class="hint" style="font-size:11.5px;margin-top:6px">Marmita = criança traz comida de casa (valor diferente, varia por criança).</p>
+    <button class="btn btn-primary" onclick="cadastrar()">✅ Cadastrar</button>
+    <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
+  </div>
+
+</div><!-- .app -->
+
+<script>
+const API = 'https://rafaelbf.pythonanywhere.com';
+const DIAS_LABEL = {Segunda:'Segunda',Terca:'Terça',Quarta:'Quarta',Quinta:'Quinta',Sexta:'Sexta'};
+
+// Estado
+let criancaAtual = null;   // {id, nome, turma, dias, tipo_fixo}
+let tipoEditarAtual  = 'tradicional';
+let tipoAvulsaAtual  = 'tradicional';
+let qtdAvulsaAtual   = 1;
+let cadTurmaAtual    = 'Maternal';
+let tipoCadAtual     = 'tradicional';
+
+// ── Navegação ────────────────────────────────────────────────────────────────
+const TELAS = {
+  'tela-home':        { titulo:'🍽 Almoço Escolar', sub:'Escola Vilarejo',       voltar: null },
+  'tela-perfil':      { titulo:'🍽 Almoço Escolar', sub:'Confirme o almoço',     voltar: 'tela-home' },
+  'tela-editar-dias': { titulo:'⚙️ Editar dias fixos', sub:null,                  voltar: 'tela-perfil' },
+  'tela-avulsa':      { titulo:'🍱 Pedir quentinha',  sub:null,                  voltar: 'tela-perfil' },
+  'tela-cadastrar':   { titulo:'✏️ Cadastrar aluno',    sub:null,                  voltar: 'tela-home' },
+};
+
+function irPara(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const cfg = TELAS[id] || {};
+  const hdr = document.getElementById('header');
+  let html = '';
+  if (cfg.voltar)
+    html += `<button class="back-btn" onclick="irPara('${cfg.voltar}')">← Voltar</button>`;
+  html += `<h1>${cfg.titulo}</h1>`;
+  if (cfg.sub) html += `<p>${cfg.sub}</p>`;
+  hdr.innerHTML = html;
+  window.scrollTo(0, 0);
+}
+
+// ── Home: carregar nomes por turma ───────────────────────────────────────────
+async function carregarNomes() {
+  const turma = document.getElementById('sel-turma').value;
+  const selNome  = document.getElementById('sel-nome');
+  const btnAcess = document.getElementById('btn-acessar');
+  selNome.innerHTML  = '<option value="">Carregando...</option>';
+  selNome.disabled   = true;
+  btnAcess.disabled  = true;
+
+  if (!turma) {
+    selNome.innerHTML = '<option value="">Selecione a turma primeiro...</option>';
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/criancas/por-turma?turma=${encodeURIComponent(turma)}`);
+    const lista = await r.json();
+    if (!lista.length) {
+      selNome.innerHTML = '<option value="">Nenhum aluno nesta turma</option>';
+      return;
+    }
+    selNome.innerHTML = '<option value="">Selecione o nome...</option>' +
+      lista.map(c => `<option value="${c.id}" data-nome="${c.nome}" data-turma="${c.turma}">${c.nome}</option>`).join('');
+    selNome.disabled  = false;
+    selNome.onchange  = () => { btnAcess.disabled = !selNome.value; };
+  } catch {
+    selNome.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+async function acessarCrianca() {
+  const selNome = document.getElementById('sel-nome');
+  const opt = selNome.options[selNome.selectedIndex];
+  if (!opt.value) return;
+  const nome  = opt.dataset.nome;
+  const turma = opt.dataset.turma;
+
+  // Buscar dados completos da criança
+  try {
+    const r = await fetch(`${API}/crianca/buscar?nome=${encodeURIComponent(nome)}`);
+    const d = await r.json();
+    if (d.encontrado) {
+      criancaAtual = d;
+      mostrarPerfil();
+    }
+  } catch { alert('Erro de conexão.'); }
+}
+
+// ── Cadastrar: vindo da home com nome pré-preenchido ─────────────────────────
+function irCadastrar() {
+  const nome = document.getElementById('cad-nome-home').value.trim();
+  if (nome) document.getElementById('cad-nome').value = nome;
+  irPara('tela-cadastrar');
+}
+
+// ── Perfil ───────────────────────────────────────────────────────────────────
+function mostrarPerfil() {
+  const ini = criancaAtual.nome.trim().split(/\s+/).slice(0,2).map(n=>n[0].toUpperCase()).join('');
+  document.getElementById('p-avatar').textContent = ini;
+  document.getElementById('p-nome').textContent   = criancaAtual.nome;
+  document.getElementById('p-sub').textContent    = criancaAtual.turma;
+  irPara('tela-perfil');
+  carregarDias();
+}
+
+async function carregarDias() {
+  const el = document.getElementById('p-dias');
+  el.innerHTML = '<div class="loading">⏳ Carregando...</div>';
+  try {
+    const r = await fetch(
+      `${API}/dias?crianca_id=${criancaAtual.id}` +
+      `&dias_csv=${encodeURIComponent(criancaAtual.dias || '')}` +
+      `&tipo_fixo=${criancaAtual.tipo_fixo || 'tradicional'}`
+    );
+    const dias = await r.json();
+    renderDias(dias);
+  } catch { el.innerHTML = '<div class="empty">Erro ao carregar.</div>'; }
+}
+
+function renderDias(dias) {
+  const el = document.getElementById('p-dias');
+  let html = '';
+  for (const d of dias) {
+    const label = DIAS_LABEL[d.dia_nome] || d.dia_nome;
+    const tipoTag = d.tipo
+      ? `<span class="tag ${d.tipo==='vegano'?'tag-veg':d.tipo==='marmita'?'tag-marm':'tag-trad'}">${d.tipo==='vegano'?'🥦 Vegano':d.tipo==='marmita'?'🍱 Marmita':'🍖 Tradicional'}</span>`
+      : '';
+    const statusTag = d.confirmado
+      ? `<span class="tag tag-sim">✓ Confirmado</span>`
+      : `<span class="tag tag-nao">— Não</span>`;
+    const fechado = !d.aberto;
+
+    let btnHtml = '';
+    if (fechado) {
+      btnHtml = `<button class="toggle-btn" disabled>${d.confirmado?'✓':'—'}</button>`;
+    } else if (d.confirmado) {
+      btnHtml = `<button class="toggle-btn off" onclick="cancelar('${d.data}',this)">Cancelar</button>`;
+    } else {
+      btnHtml = `<button class="toggle-btn on" onclick="confirmar('${d.data}',this)">Confirmar</button>`;
+    }
+
+    html += `<div class="dia-card ${d.confirmado?'confirmado':''} ${fechado&&!d.confirmado?'cancelado':''}">
+      <div class="dia-info">
+        <div class="dia-nome">${label} <span style="font-weight:400;font-size:13px;color:var(--muted)">${d.data_fmt}</span></div>
+        <div class="dia-tipo" style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">${statusTag}${tipoTag}</div>
+      </div>
+      ${btnHtml}
+    </div>`;
+  }
+  html += `<div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-secondary" style="flex:1;font-size:13px" onclick="abrirEditarDias()">⚙️ Editar dias fixos</button>
+    <button class="btn btn-secondary" style="flex:1;font-size:13px" onclick="abrirAvulsas()">🍱 Pedir quentinha</button>
+  </div>`;
+  el.innerHTML = html;
+}
+
+// ── Confirmar / Cancelar ─────────────────────────────────────────────────────
+async function confirmar(data, btn) {
+  btn.disabled = true;
+  try {
+    await fetch(`${API}/confirmar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({crianca_id: criancaAtual.id, data,
+                            tipo: criancaAtual.tipo_fixo || 'tradicional'})
+    });
+    carregarDias();
+  } catch { btn.disabled = false; }
+}
+
+async function cancelar(data, btn) {
+  btn.disabled = true;
+  try {
+    await fetch(`${API}/retirar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({crianca_id: criancaAtual.id, data})
+    });
+    carregarDias();
+  } catch { btn.disabled = false; }
+}
+
+// ── Editar dias fixos ─────────────────────────────────────────────────────────
+function abrirEditarDias() {
+  const dias = (criancaAtual.dias || '').split(',').map(s => s.trim()).filter(Boolean);
+  ['e1','e2','e3','e4','e5'].forEach(id => {
+    const el = document.getElementById(id);
+    el.checked = dias.includes(el.value);
+  });
+  const tipo = criancaAtual.tipo_fixo || 'tradicional';
+  tipoEditarAtual = tipo;
+  document.querySelectorAll('#seg-tipo-editar button').forEach((btn, i) => {
+    btn.classList.toggle('on', (i===0 && tipo==='tradicional') || (i===1 && tipo==='vegano'));
+  });
+  irPara('tela-editar-dias');
+}
+
+function setTipoEditar(t, btn) {
+  tipoEditarAtual = t;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function salvarDias() {
+  const dias = ['e1','e2','e3','e4','e5']
+    .filter(id => document.getElementById(id).checked)
+    .map(id => document.getElementById(id).value);
+  try {
+    const r = await fetch(`${API}/crianca/atualizar-fixos`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({crianca_id: criancaAtual.id, dias, tipo: tipoEditarAtual})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      criancaAtual.dias      = d.dias;
+      criancaAtual.tipo_fixo = d.tipo_fixo;
+      mostrarPerfil();
+    }
+  } catch { alert('Erro ao salvar.'); }
+}
+
+// ── Avulsas ──────────────────────────────────────────────────────────────────
+async function abrirAvulsas() {
+  irPara('tela-avulsa');
+  // Calcular próximos 5 dias úteis (a partir de hoje)
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  const uteis = [];
+  let cursor = new Date(hoje);
+  while (uteis.length < 5) {
+    const dow = cursor.getDay();  // 0=dom, 6=sab
+    if (dow >= 1 && dow <= 5) uteis.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  const min = uteis[0].toISOString().split('T')[0];
+  const max = uteis[uteis.length - 1].toISOString().split('T')[0];
+  const inp = document.getElementById('avulsa-data');
+  inp.min   = min;
+  inp.max   = max;
+  inp.value = '';
+  // Resetar quantidade para 1
+  qtdAvulsaAtual = 1;
+  document.querySelectorAll('#seg-qtd-avulsa button').forEach((b, i) => {
+    b.classList.toggle('on', i === 0);
+  });
+  await carregarAvulsas();
+}
+
+function setQtdAvulsa(n, btn) {
+  qtdAvulsaAtual = n;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function carregarAvulsas() {
+  const el = document.getElementById('avulsa-lista');
+  el.innerHTML = '<div class="loading">⏳</div>';
+  try {
+    const r = await fetch(`${API}/avulsos?crianca_id=${criancaAtual.id}`);
+    const lista = await r.json();
+    if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum pedido avulso.</div>'; return; }
+    el.innerHTML = lista.map(a => {
+      const [y,m,d] = a.data.split('-');
+      const qtd     = a.quantidade || 1;
+      const qtdTxt  = qtd > 1 ? ` <strong style="color:#1a7f5a">×${qtd}</strong>` : '';
+      return `<div class="avulso-row">
+        <span style="font-size:14px;font-weight:500">${d}/${m}/${y}${qtdTxt}</span>
+        <span class="tag ${a.tipo==='vegano'?'tag-veg':a.tipo==='marmita'?'tag-marm':'tag-trad'}">${a.tipo==='vegano'?'🥦 Veg':a.tipo==='marmita'?'🍱 Marm':'🍖 Trad'}</span>
+        <button class="avulso-del" onclick="cancelarAvulsa('${a.data}',this)">✕</button>
+      </div>`;
+    }).join('');
+  } catch { el.innerHTML = '<div class="empty">Erro ao carregar.</div>'; }
+}
+
+function setTipoAvulsa(t, btn) {
+  tipoAvulsaAtual = t;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function pedirAvulsa() {
+  const data = document.getElementById('avulsa-data').value;
+  if (!data) { alert('Selecione uma data.'); return; }
+  try {
+    const r = await fetch(`${API}/pedir-avulso`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        crianca_id: criancaAtual.id,
+        data,
+        tipo: tipoAvulsaAtual,
+        quantidade: qtdAvulsaAtual
+      })
+    });
+    const d = await r.json();
+    if (d.ok) { document.getElementById('avulsa-data').value = ''; await carregarAvulsas(); }
+    else alert(d.erro || 'Erro ao pedir marmita.');
+  } catch { alert('Erro de conexão.'); }
+}
+
+async function cancelarAvulsa(data, btn) {
+  btn.disabled = true;
+  try {
+    await fetch(`${API}/cancelar-avulso`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({crianca_id: criancaAtual.id, data})
+    });
+    await carregarAvulsas();
+  } catch { btn.disabled = false; }
+}
+
+// ── Cadastrar ─────────────────────────────────────────────────────────────────
+function setCadTurma(t, btn) {
+  cadTurmaAtual = t;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function setTipoCad(t, btn) {
+  tipoCadAtual = t;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function cadastrar() {
+  const nome  = document.getElementById('cad-nome').value.trim();
+  const alertEl = document.getElementById('cad-alert');
+  alertEl.innerHTML = '';
+  if (!nome) { alertEl.innerHTML = '<div class="alert alert-err">Informe o nome.</div>'; return; }
+  const dias = ['c1','c2','c3','c4','c5']
+    .filter(id => document.getElementById(id).checked)
+    .map(id => document.getElementById(id).value);
+  try {
+    const r = await fetch(`${API}/crianca/cadastrar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({nome, turma: cadTurmaAtual, dias, tipo: tipoCadAtual})
+    });
+    const d = await r.json();
+    if (d.id) {
+      criancaAtual = d;
+      document.getElementById('cad-nome').value = '';
+      ['c1','c2','c3','c4','c5'].forEach(id => document.getElementById(id).checked = false);
+      mostrarPerfil();
+    } else {
+      alertEl.innerHTML = `<div class="alert alert-err">${d.erro || 'Erro ao cadastrar.'}</div>`;
+    }
+  } catch { alertEl.innerHTML = '<div class="alert alert-err">Erro de conexão.</div>'; }
+}
+</script>
+</body>
+</html>
