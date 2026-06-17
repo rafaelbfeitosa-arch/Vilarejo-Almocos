@@ -155,6 +155,18 @@
     .alert-ok  { background: var(--brand-light); color: var(--brand-dark); }
     .loading   { text-align: center; color: var(--muted); padding: 32px; }
 
+    /* Cardápio */
+    .cardapio-dia-label { font-size: 11px; font-weight: 700; color: var(--muted);
+                          text-transform: uppercase; letter-spacing: .05em;
+                          display: block; margin: 14px 0 5px; }
+    .cardapio-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+                      border-radius: 10px; font-size: 14px; background: var(--card);
+                      color: var(--text); outline: none; resize: none;
+                      font-family: inherit; line-height: 1.4; }
+    .cardapio-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(26,127,90,.15); }
+    .cardapio-prato { font-size: 12px; color: var(--muted); margin-top: 5px;
+                      font-style: italic; line-height: 1.4; }
+
     /* Lista de almoços */
     .lista-tabs { display: flex; border-bottom: 1.5px solid var(--border); margin-bottom: 16px; }
     .lista-tab  { flex: 1; padding: 11px 6px; font-size: 13px; font-weight: 500;
@@ -233,6 +245,15 @@
     </div>
     <button class="btn btn-secondary" onclick="acessarLista()" style="margin-bottom:0">
       📋 Ver lista de almoços (ontem · hoje · amanhã)
+    </button>
+
+    <div class="divider-label"><span>acesso cozinheira</span></div>
+    <div class="field" style="margin-bottom:10px">
+      <label class="sel-label">Código da cozinheira</label>
+      <input type="password" id="inp-cod-cozinha" placeholder="Código secreto" autocomplete="off">
+    </div>
+    <button class="btn btn-secondary" onclick="acessarCardapio()" style="margin-bottom:0">
+      🍳 Editar cardápio da semana
     </button>
 
     <div class="divider-label"><span>ou cadastre um novo aluno</span></div>
@@ -363,6 +384,26 @@
     <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
   </div>
 
+  <!-- TELA: CARDÁPIO (cozinheira) -->
+  <div class="screen" id="tela-cardapio">
+    <div id="cardapio-alert"></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:4px">
+      Preencha o cardápio desta semana. Os pais verão o prato do dia ao confirmar o almoço do filho.
+    </p>
+    <span class="cardapio-dia-label">Segunda-feira</span>
+    <textarea class="cardapio-input" id="cp-segunda" rows="2" placeholder="Ex: Arroz, feijão, frango grelhado, salada"></textarea>
+    <span class="cardapio-dia-label">Terça-feira</span>
+    <textarea class="cardapio-input" id="cp-terca" rows="2" placeholder="..."></textarea>
+    <span class="cardapio-dia-label">Quarta-feira</span>
+    <textarea class="cardapio-input" id="cp-quarta" rows="2" placeholder="..."></textarea>
+    <span class="cardapio-dia-label">Quinta-feira</span>
+    <textarea class="cardapio-input" id="cp-quinta" rows="2" placeholder="..."></textarea>
+    <span class="cardapio-dia-label">Sexta-feira</span>
+    <textarea class="cardapio-input" id="cp-sexta" rows="2" placeholder="..."></textarea>
+    <button class="btn btn-primary" onclick="salvarCardapio()" style="margin-top:20px">💾 Salvar cardápio</button>
+    <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
+  </div>
+
   <!-- TELA: LISTA DE ALMOÇOS -->
   <div class="screen" id="tela-lista">
     <div class="codigo-box">
@@ -393,10 +434,12 @@
 const API = 'https://rafaelbf.pythonanywhere.com';
 const DIAS_LABEL = {Segunda:'Segunda',Terca:'Terça',Quarta:'Quarta',Quinta:'Quinta',Sexta:'Sexta'};
 
-const CODIGO_ESCOLA = 'VILAREJO';
+const CODIGO_ESCOLA   = 'VILAREJO';
+const CODIGO_COZINHA  = 'COZINHA';
 
 // Estado
-let criancaAtual = null;   // {id, nome, turma, dias, tipo_fixo}
+let criancaAtual    = null;   // {id, nome, turma, dias, tipo_fixo}
+let cardapioAtual   = {};     // {Segunda: "...", Terca: "...", ...}
 let diaListaOffset = 0;    // -1=ontem, 0=hoje, 1=amanhã
 let tipoEditarAtual  = 'tradicional';
 let tipoAvulsaAtual  = 'tradicional';
@@ -412,6 +455,7 @@ const TELAS = {
   'tela-avulsa':      { titulo:'🍱 Encomendar quentinha', sub:'Almoço pra viagem', voltar: 'tela-perfil' },
   'tela-cadastrar':   { titulo:'✏️ Cadastrar aluno',    sub:null,                  voltar: 'tela-home' },
   'tela-lista':       { titulo:'📋 Lista de Almoços',  sub:'Escola Vilarejo',     voltar: 'tela-home' },
+  'tela-cardapio':    { titulo:'🍳 Cardápio da Semana', sub:'Acesso cozinheira',   voltar: 'tela-home' },
 };
 
 function irPara(id) {
@@ -492,16 +536,28 @@ function mostrarPerfil() {
   carregarDias();
 }
 
+function getMondayISO() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split('T')[0];
+}
+
 async function carregarDias() {
   const el = document.getElementById('p-dias');
   el.innerHTML = '<div class="loading">⏳ Carregando...</div>';
   try {
-    const r = await fetch(
-      `${API}/dias?crianca_id=${criancaAtual.id}` +
-      `&dias_csv=${encodeURIComponent(criancaAtual.dias || '')}` +
-      `&tipo_fixo=${criancaAtual.tipo_fixo || 'tradicional'}`
-    );
-    const dias = await r.json();
+    const [rDias, rCardapio] = await Promise.all([
+      fetch(
+        `${API}/dias?crianca_id=${criancaAtual.id}` +
+        `&dias_csv=${encodeURIComponent(criancaAtual.dias || '')}` +
+        `&tipo_fixo=${criancaAtual.tipo_fixo || 'tradicional'}`
+      ),
+      fetch(`${API}/cardapio?semana=${getMondayISO()}`).catch(() => null)
+    ]);
+    const dias = await rDias.json();
+    cardapioAtual = rCardapio ? (await rCardapio.json().catch(() => {})) : {};
     renderDias(dias);
   } catch { el.innerHTML = '<div class="empty">Erro ao carregar.</div>'; }
 }
@@ -557,10 +613,16 @@ function renderDias(dias) {
     else              classes.push('vazio');
     if (fechado && !d.confirmado) classes.push('cancelado');
 
+    const prato = cardapioAtual[d.dia_nome];
+    const pratoHtml = prato
+      ? `<div class="cardapio-prato">🍽 ${prato}</div>`
+      : '';
+
     html += `<div class="${classes.join(' ')}" data-data="${d.data}">
       <div class="dia-top">
         <div class="dia-info">
           <div class="dia-nome">${label} <span style="font-weight:400;font-size:13px;color:var(--muted)">${d.data_fmt}</span></div>
+          ${pratoHtml}
         </div>
         ${badge}
       </div>
@@ -785,6 +847,52 @@ function setTipoCad(t, btn) {
   tipoCadAtual = t;
   btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
+}
+
+// ── Cardápio (cozinheira) ─────────────────────────────────────────────────────
+function acessarCardapio() {
+  const cod = document.getElementById('inp-cod-cozinha').value.trim().toUpperCase();
+  if (cod !== CODIGO_COZINHA) { alert('Código incorreto.'); return; }
+  irPara('tela-cardapio');
+  carregarCardapioParaEditar();
+}
+
+async function carregarCardapioParaEditar() {
+  try {
+    const r = await fetch(`${API}/cardapio?semana=${getMondayISO()}`);
+    const d = await r.json();
+    document.getElementById('cp-segunda').value = d.Segunda || '';
+    document.getElementById('cp-terca').value   = d.Terca   || '';
+    document.getElementById('cp-quarta').value  = d.Quarta  || '';
+    document.getElementById('cp-quinta').value  = d.Quinta  || '';
+    document.getElementById('cp-sexta').value   = d.Sexta   || '';
+  } catch {}
+}
+
+async function salvarCardapio() {
+  const alertEl = document.getElementById('cardapio-alert');
+  const dias = {
+    Segunda: document.getElementById('cp-segunda').value.trim(),
+    Terca:   document.getElementById('cp-terca').value.trim(),
+    Quarta:  document.getElementById('cp-quarta').value.trim(),
+    Quinta:  document.getElementById('cp-quinta').value.trim(),
+    Sexta:   document.getElementById('cp-sexta').value.trim(),
+  };
+  try {
+    const r = await fetch(`${API}/cardapio`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ semana: getMondayISO(), dias })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      alertEl.innerHTML = '<div class="alert alert-ok">✓ Cardápio salvo com sucesso!</div>';
+      setTimeout(() => alertEl.innerHTML = '', 3000);
+    } else {
+      alertEl.innerHTML = '<div class="alert alert-err">Erro ao salvar.</div>';
+    }
+  } catch {
+    alertEl.innerHTML = '<div class="alert alert-err">Erro de conexão.</div>';
+  }
 }
 
 // ── Lista de almoços ──────────────────────────────────────────────────────────
