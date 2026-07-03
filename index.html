@@ -759,24 +759,8 @@
     </button>
 
     <div class="divider-label"><span>se você é da escola</span></div>
-    <div class="field" style="margin-bottom:10px">
-      <label class="sel-label">Código de acesso</label>
-      <input type="text" id="inp-codigo" placeholder="Digite o código"
-             autocomplete="off" autocorrect="off" spellcheck="false"
-             style="text-transform:uppercase;letter-spacing:.08em"
-             oninput="this.value=this.value.toUpperCase()">
-    </div>
     <button class="btn btn-secondary" onclick="acessarLista()" style="margin-bottom:0">
       📋 Ver lista de almoços do dia
-    </button>
-
-    <div class="divider-label"><span>se você cuida da cozinha</span></div>
-    <div class="field" style="margin-bottom:10px">
-      <label class="sel-label">Código da cozinha</label>
-      <input type="password" id="inp-cod-cozinha" placeholder="Código secreto" autocomplete="off">
-    </div>
-    <button class="btn btn-secondary" onclick="acessarCardapio()" style="margin-bottom:0">
-      🍳 Escrever o cardápio da semana
     </button>
 
     <div class="divider-label"><span>primeira vez? cadastre a criança</span></div>
@@ -906,26 +890,6 @@
     <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
   </div>
 
-  <!-- TELA: CARDÁPIO (cozinheira) -->
-  <div class="screen" id="tela-cardapio">
-    <div id="cardapio-alert"></div>
-    <p style="font-size:14.5px;color:var(--tinta-suave);margin-bottom:8px;line-height:1.55">
-      Escreva o cardápio desta semana. Os pais vão ver o prato do dia ao confirmar o almoço.
-    </p>
-    <span class="cardapio-dia-label">Segunda-feira</span>
-    <textarea class="cardapio-input" id="cp-segunda" rows="2" placeholder="Ex: Arroz, feijão, frango grelhado, salada"></textarea>
-    <span class="cardapio-dia-label">Terça-feira</span>
-    <textarea class="cardapio-input" id="cp-terca" rows="2" placeholder="..."></textarea>
-    <span class="cardapio-dia-label">Quarta-feira</span>
-    <textarea class="cardapio-input" id="cp-quarta" rows="2" placeholder="..."></textarea>
-    <span class="cardapio-dia-label">Quinta-feira</span>
-    <textarea class="cardapio-input" id="cp-quinta" rows="2" placeholder="..."></textarea>
-    <span class="cardapio-dia-label">Sexta-feira</span>
-    <textarea class="cardapio-input" id="cp-sexta" rows="2" placeholder="..."></textarea>
-    <button class="btn btn-primary" onclick="salvarCardapio()" style="margin-top:22px">💾 Salvar cardápio</button>
-    <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
-  </div>
-
   <!-- TELA: LISTA DE ALMOÇOS -->
   <div class="screen" id="tela-lista">
     <div class="codigo-box">
@@ -957,7 +921,6 @@ const API = 'https://rafaelbf.pythonanywhere.com';
 const DIAS_LABEL = {Segunda:'Segunda',Terca:'Terça',Quarta:'Quarta',Quinta:'Quinta',Sexta:'Sexta'};
 
 const CODIGO_ESCOLA   = 'VILAREJO';
-const CODIGO_COZINHA  = 'COZINHA';
 
 // Estado
 let criancaAtual    = null;   // {id, nome, turma, dias, tipo_fixo}
@@ -977,7 +940,6 @@ const TELAS = {
   'tela-avulsa':      { titulo:'Encomendar quentinha',     sub:'Almoço para viagem',    voltar: 'tela-perfil' },
   'tela-cadastrar':   { titulo:'Cadastrar criança',        sub:null,                    voltar: 'tela-home' },
   'tela-lista':       { titulo:'Lista de Almoços',         sub:'Escola Vilarejo',       voltar: 'tela-home' },
-  'tela-cardapio':    { titulo:'Cardápio da Semana',       sub:'Acesso cozinha',        voltar: 'tela-home' },
 };
 
 function irPara(id) {
@@ -1371,59 +1333,8 @@ function setTipoCad(t, btn) {
   btn.classList.add('on');
 }
 
-// ── Cardápio (cozinheira) ─────────────────────────────────────────────────────
-function acessarCardapio() {
-  const cod = document.getElementById('inp-cod-cozinha').value.trim().toUpperCase();
-  if (cod !== CODIGO_COZINHA) { alert('Código incorreto.'); return; }
-  irPara('tela-cardapio');
-  carregarCardapioParaEditar();
-}
-
-async function carregarCardapioParaEditar() {
-  try {
-    const r = await fetch(`${API}/cardapio?semana=${getMondayISO()}`);
-    const d = await r.json();
-    document.getElementById('cp-segunda').value = d.Segunda || '';
-    document.getElementById('cp-terca').value   = d.Terca   || '';
-    document.getElementById('cp-quarta').value  = d.Quarta  || '';
-    document.getElementById('cp-quinta').value  = d.Quinta  || '';
-    document.getElementById('cp-sexta').value   = d.Sexta   || '';
-  } catch {}
-}
-
-async function salvarCardapio() {
-  const alertEl = document.getElementById('cardapio-alert');
-  const dias = {
-    Segunda: document.getElementById('cp-segunda').value.trim(),
-    Terca:   document.getElementById('cp-terca').value.trim(),
-    Quarta:  document.getElementById('cp-quarta').value.trim(),
-    Quinta:  document.getElementById('cp-quinta').value.trim(),
-    Sexta:   document.getElementById('cp-sexta').value.trim(),
-  };
-  try {
-    const r = await fetch(`${API}/cardapio`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ semana: getMondayISO(), dias })
-    });
-    const d = await r.json();
-    if (d.ok) {
-      alertEl.innerHTML = '<div class="alert alert-ok">✓ Cardápio salvo com sucesso!</div>';
-      setTimeout(() => alertEl.innerHTML = '', 3000);
-    } else {
-      alertEl.innerHTML = '<div class="alert alert-err">Erro ao salvar.</div>';
-    }
-  } catch {
-    alertEl.innerHTML = '<div class="alert alert-err">Erro de conexão.</div>';
-  }
-}
-
 // ── Lista de almoços ──────────────────────────────────────────────────────────
 function acessarLista() {
-  const codigo = document.getElementById('inp-codigo').value.trim().toUpperCase();
-  if (codigo !== CODIGO_ESCOLA) {
-    alert('Código incorreto. Peça o código à escola.');
-    return;
-  }
   abrirLista(0);
 }
 
