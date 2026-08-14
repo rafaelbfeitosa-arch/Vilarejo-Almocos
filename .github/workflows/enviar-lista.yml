@@ -13,8 +13,17 @@ jobs:
     steps:
       - name: Chamar API de envio
         run: |
-          curl -s -X POST "${{ secrets.API_URL }}/enviar-lista" \
-            -H "X-Secret: ${{ secrets.LISTA_SECRET }}" \
-            --fail \
-            && echo "Lista enviada com sucesso" \
-            || echo "Erro ao enviar lista"
+          # Nenhum fallback engolindo o erro: um envio que falha precisa derrubar
+          # o step, senão o GitHub mostra verde e ninguém descobre que a cozinha
+          # ficou sem lista.
+          # --fail       -> HTTP >= 400 vira código de saída != 0
+          # --show-error -> mostra o motivo apesar do --silent
+          # --retry      -> só reprova erro transitório (5xx, rede); 403 não é
+          #                 retentado, porque secret errado não melhora tentando
+          curl --fail --silent --show-error \
+               --retry 3 --retry-delay 15 \
+               --max-time 180 \
+               -X POST "${{ secrets.API_URL }}/enviar-lista" \
+               -H "X-Secret: ${{ secrets.LISTA_SECRET }}"
+          echo
+          echo "Lista enviada com sucesso"
