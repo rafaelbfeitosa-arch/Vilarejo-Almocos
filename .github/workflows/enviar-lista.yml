@@ -2,7 +2,9 @@ name: Enviar lista de almoços
 
 on:
   schedule:
-    - cron: '1 11 * * 1-5'
+    # 13:05 UTC = 10:05 em Brasília — logo após o corte de edição dos pais (10h),
+    # para que a cozinha receba a lista já fechada.
+    - cron: '5 13 * * 1-5'
   workflow_dispatch:
 
 jobs:

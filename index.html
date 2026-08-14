@@ -722,6 +722,56 @@
       font-family: inherit;
     }
     .copy-btn:active { background: var(--musgo-fundo); }
+
+    /* ───── Modo escola ───── */
+    .prof-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: linear-gradient(135deg, var(--terra-claro), #f8ecd9);
+      border-bottom: 1.5px solid #e2c6a4;
+      padding: 10px 20px;
+      font-size: 13.5px;
+      color: #6b4a2a;
+    }
+    .prof-banner.on { display: flex; }
+    .prof-banner strong { color: var(--carvao); }
+    .prof-sair {
+      background: #fff;
+      border: 1.5px solid #e2c6a4;
+      color: #6b4a2a;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .prof-sair:active { background: var(--terra-claro); }
+
+    .prof-ver {
+      background: none;
+      border: none;
+      color: var(--musgo);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 2px 0;
+    }
+
+    /* Aviso de horário encerrado dentro do card do dia */
+    .dia-encerrado {
+      font-size: 13px;
+      color: #7a3434;
+      background: var(--rosa-claro);
+      border-radius: 10px;
+      padding: 9px 13px;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -730,6 +780,11 @@
     <h1>Almoço Escolar</h1>
     <p>Escola Vilarejo</p>
   </header>
+
+  <div class="prof-banner" id="prof-banner">
+    <span>🔑 <strong>Modo escola</strong> — edição sem limite de horário</span>
+    <button class="prof-sair" onclick="sairModoEscola()">Sair</button>
+  </div>
 
   <!-- TELA: HOME -->
   <div class="screen active" id="tela-home">
@@ -762,6 +817,9 @@
     <button class="btn btn-secondary" onclick="acessarLista()" style="margin-bottom:0">
       📋 Ver lista de almoços do dia
     </button>
+    <button class="btn btn-secondary" id="btn-modo-escola" onclick="irPara('tela-prof')">
+      🔑 Modo escola — editar sem limite de horário
+    </button>
 
     <div class="divider-label"><span>primeira vez? cadastre a criança</span></div>
 
@@ -789,7 +847,9 @@
       • <span class="pill pill-avulso">✨ Só este dia</span> &nbsp;pedido pontual<br>
       Trocar o tipo (🍖 / 🥦 / 🍱) ou cancelar aqui <strong>vale só para esse dia</strong>.<br>
       Para mudar a rotina semanal, toque em <strong>⚙️ Editar dias fixos</strong>.<br>
-      <em style="display:block;margin-top:6px">⏰ Sem limite de horário — pode editar a qualquer momento.</em>
+      <em style="display:block;margin-top:6px" id="p-aviso-horario">⏰ O almoço <strong>de hoje</strong> pode ser
+      alterado até as <strong>10h</strong>. Depois disso, só a escola consegue mexer —
+      fale com a secretaria. Os outros dias seguem livres.</em>
     </div>
 
     <div id="p-dias" class="loading">⏳ Carregando...</div>
@@ -827,6 +887,10 @@
       🍱 <strong>Quentinha</strong> é um almoço preparado na escola para a criança <strong>levar para viagem</strong>.<br>
       Escolha a data (próximos <strong>5 dias úteis</strong>) e quantas quentinhas quer. <strong>Não altera os seus dias fixos.</strong>
     </p>
+    <div class="alert alert-err" id="avulsa-aviso-horario" style="display:none">
+      ⏰ O prazo para encomendar para <strong>hoje</strong> encerrou às 10h.
+      Escolha outro dia ou fale com a secretaria.
+    </div>
     <div class="field">
       <label class="sel-label">Data desejada</label>
       <input type="date" id="avulsa-data">
@@ -890,6 +954,32 @@
     <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
   </div>
 
+  <!-- TELA: MODO ESCOLA (professores / administração) -->
+  <div class="screen" id="tela-prof">
+    <p class="hint" style="margin-bottom:22px;font-size:14.5px">
+      Professores e administração podem incluir ou retirar almoços
+      <strong>a qualquer hora</strong>, inclusive depois das 10h.<br>
+      Peça o código à secretaria.
+    </p>
+    <div id="prof-alert"></div>
+    <div class="field">
+      <label class="sel-label">Código da escola</label>
+      <!-- autocapitalize/autocorrect OFF: o código é uma frase em minúsculas e o
+           teclado do celular a estragaria antes de chegar ao servidor. -->
+      <input type="password" id="prof-codigo" placeholder="palavra-palavra-palavra-000"
+             autocomplete="off" autocorrect="off" autocapitalize="off"
+             spellcheck="false"
+             onkeydown="if(event.key==='Enter')entrarModoEscola()">
+      <button type="button" class="prof-ver" id="prof-ver" onclick="alternarVerCodigo()">
+        👁 Mostrar código
+      </button>
+    </div>
+    <button class="btn btn-primary" id="btn-prof-entrar" onclick="entrarModoEscola()">
+      🔑 Entrar no modo escola
+    </button>
+    <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
+  </div>
+
   <!-- TELA: LISTA DE ALMOÇOS -->
   <div class="screen" id="tela-lista">
     <div class="codigo-box">
@@ -922,15 +1012,110 @@ const DIAS_LABEL = {Segunda:'Segunda',Terca:'Terça',Quarta:'Quarta',Quinta:'Qui
 
 const CODIGO_ESCOLA   = 'VILAREJO';
 
+// Corte de edição para os pais: o almoço de HOJE só pode mudar até este horário.
+// Valor apenas informativo/visual — quem decide de fato é o backend (fuso do servidor).
+const HORA_CORTE = '10h';
+
+// Modo escola: código validado no backend e reenviado como header nas escritas.
+const PROF_KEY = 'prof_secret';
+let profSecret = localStorage.getItem(PROF_KEY) || null;
+
 // Estado
 let criancaAtual    = null;   // {id, nome, turma, dias, tipo_fixo}
 let cardapioAtual   = {};     // {Segunda: "...", Terca: "...", ...}
+let diasAtuais      = [];     // último /dias — fonte da verdade sobre quais dias estão abertos
 let diaListaOffset = 0;    // -1=ontem, 0=hoje, 1=amanhã
 let tipoEditarAtual  = 'tradicional';
 let tipoAvulsaAtual  = 'tradicional';
 let qtdAvulsaAtual   = 1;
 let cadTurmaAtual    = 'Maternal';
 let tipoCadAtual     = 'tradicional';
+
+// ── Modo escola ──────────────────────────────────────────────────────────────
+// O header vai em TODA requisição: é ele que faz o backend liberar o corte das 10h.
+function headersEscola(base) {
+  const h = Object.assign({}, base || {});
+  if (profSecret) h['X-Prof-Secret'] = profSecret;
+  return h;
+}
+
+async function apiGet(path) {
+  return fetch(`${API}${path}`, { headers: headersEscola() });
+}
+
+// Devolve {ok, erro}. Centraliza o tratamento do 403 de horário encerrado,
+// que antes era engolido silenciosamente pelos writes.
+async function apiPost(path, body) {
+  try {
+    const r = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: headersEscola({'Content-Type':'application/json'}),
+      body: JSON.stringify(body)
+    });
+    let d = {};
+    try { d = await r.json(); } catch {}
+    if (!r.ok || d.ok === false) {
+      return { ok:false, erro: d.erro || `Não foi possível salvar (erro ${r.status}).`, status: r.status };
+    }
+    return Object.assign({ ok:true }, d);
+  } catch {
+    return { ok:false, erro:'Erro de conexão. Verifique a internet e tente de novo.' };
+  }
+}
+
+function aplicarModoEscola() {
+  const ativo = !!profSecret;
+  document.getElementById('prof-banner').classList.toggle('on', ativo);
+  const btn = document.getElementById('btn-modo-escola');
+  if (btn) btn.style.display = ativo ? 'none' : '';
+}
+
+function alternarVerCodigo() {
+  const inp = document.getElementById('prof-codigo');
+  const btn = document.getElementById('prof-ver');
+  const escondido = inp.type === 'password';
+  inp.type = escondido ? 'text' : 'password';
+  btn.textContent = escondido ? '🙈 Esconder código' : '👁 Mostrar código';
+  inp.focus();
+}
+
+async function entrarModoEscola() {
+  const inp     = document.getElementById('prof-codigo');
+  const alertEl = document.getElementById('prof-alert');
+  const btn     = document.getElementById('btn-prof-entrar');
+  const codigo  = inp.value.trim();
+  alertEl.innerHTML = '';
+  if (!codigo) { alertEl.innerHTML = '<div class="alert alert-err">Informe o código.</div>'; return; }
+
+  btn.disabled = true;
+  try {
+    const r = await fetch(`${API}/prof/validar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ codigo })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) {
+      profSecret = codigo;
+      localStorage.setItem(PROF_KEY, codigo);
+      inp.value = '';
+      aplicarModoEscola();
+      irPara('tela-home');
+    } else {
+      alertEl.innerHTML = '<div class="alert alert-err">Código incorreto.</div>';
+    }
+  } catch {
+    alertEl.innerHTML = '<div class="alert alert-err">Erro de conexão.</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function sairModoEscola() {
+  profSecret = null;
+  localStorage.removeItem(PROF_KEY);
+  aplicarModoEscola();
+  if (criancaAtual) carregarDias();
+}
 
 // ── Navegação ────────────────────────────────────────────────────────────────
 const TELAS = {
@@ -940,6 +1125,7 @@ const TELAS = {
   'tela-avulsa':      { titulo:'Encomendar quentinha',     sub:'Almoço para viagem',    voltar: 'tela-perfil' },
   'tela-cadastrar':   { titulo:'Cadastrar criança',        sub:null,                    voltar: 'tela-home' },
   'tela-lista':       { titulo:'Lista de Almoços',         sub:'Escola Vilarejo',       voltar: 'tela-home' },
+  'tela-prof':        { titulo:'Modo escola',              sub:'Edição sem limite de horário', voltar: 'tela-home' },
 };
 
 function irPara(id) {
@@ -1033,8 +1219,9 @@ async function carregarDias() {
   el.innerHTML = '<div class="loading">⏳ Carregando...</div>';
   try {
     const [rDias, rCardapio] = await Promise.all([
-      fetch(
-        `${API}/dias?crianca_id=${criancaAtual.id}` +
+      // header do modo escola vai junto: é ele que faz o backend devolver aberto=true
+      apiGet(
+        `/dias?crianca_id=${criancaAtual.id}` +
         `&dias_csv=${encodeURIComponent(criancaAtual.dias || '')}` +
         `&tipo_fixo=${criancaAtual.tipo_fixo || 'tradicional'}`
       ),
@@ -1047,6 +1234,7 @@ async function carregarDias() {
 }
 
 function renderDias(dias) {
+  diasAtuais = dias || [];
   const el = document.getElementById('p-dias');
   const TIPOS = [
     {v:'tradicional', emoji:'🍖', label:'Tradicional'},
@@ -1081,7 +1269,10 @@ function renderDias(dias) {
     // Ações
     let actions = '';
     if (fechado) {
-      actions = `<div class="dia-actions"><button class="toggle-btn" disabled>Encerrado</button></div>`;
+      // O backend manda o motivo em d.motivo_fechado; sem ele, assume o corte de horário.
+      const motivo = d.motivo_fechado
+        || `Encerrado às ${HORA_CORTE}. Para incluir ou retirar o almoço de hoje, fale com a secretaria.`;
+      actions = `<div class="dia-encerrado">⏰ ${motivo}</div>`;
     } else if (d.confirmado) {
       actions = `<div class="dia-actions">
         <button class="toggle-btn off" onclick="cancelarDia('${d.data}',this)">Cancelar só este dia</button>
@@ -1158,38 +1349,24 @@ async function confirmarAdicao(data, btn) {
   const tipoBtn = card.querySelector('.tipo-opt.on');
   const tipo    = tipoBtn ? tipoBtn.dataset.tipo : 'tradicional';
   btn.disabled = true;
-  try {
-    await fetch(`${API}/confirmar`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({crianca_id: criancaAtual.id, data, tipo})
-    });
-    carregarDias();
-  } catch { btn.disabled = false; }
+  const d = await apiPost('/confirmar', {crianca_id: criancaAtual.id, data, tipo});
+  if (!d.ok) alert(d.erro);
+  carregarDias();   // recarrega dos dois jeitos: o backend é a verdade sobre o que ficou aberto
 }
 
 async function mudarTipoDia(data, tipo, btn) {
   // Só altera o tipo desse dia — cria exceção sem mexer nos fixos
   btn.parentElement.querySelectorAll('.tipo-opt').forEach(b => b.disabled = true);
-  try {
-    await fetch(`${API}/confirmar`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({crianca_id: criancaAtual.id, data, tipo})
-    });
-    carregarDias();
-  } catch {
-    btn.parentElement.querySelectorAll('.tipo-opt').forEach(b => b.disabled = false);
-  }
+  const d = await apiPost('/confirmar', {crianca_id: criancaAtual.id, data, tipo});
+  if (!d.ok) alert(d.erro);
+  carregarDias();
 }
 
 async function cancelarDia(data, btn) {
   btn.disabled = true;
-  try {
-    await fetch(`${API}/retirar`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({crianca_id: criancaAtual.id, data})
-    });
-    carregarDias();
-  } catch { btn.disabled = false; }
+  const d = await apiPost('/retirar', {crianca_id: criancaAtual.id, data});
+  if (!d.ok) alert(d.erro);
+  carregarDias();
 }
 
 // ── Editar dias fixos ─────────────────────────────────────────────────────────
@@ -1218,39 +1395,34 @@ async function salvarDias() {
   const dias = ['e1','e2','e3','e4','e5']
     .filter(id => document.getElementById(id).checked)
     .map(id => document.getElementById(id).value);
-  try {
-    const r = await fetch(`${API}/crianca/atualizar-fixos`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({crianca_id: criancaAtual.id, dias, tipo: tipoEditarAtual})
-    });
-    const d = await r.json();
-    if (d.ok) {
-      criancaAtual.dias      = d.dias;
-      criancaAtual.tipo_fixo = d.tipo_fixo;
-      mostrarPerfil();
-    }
-  } catch { alert('Erro ao salvar.'); }
+  const d = await apiPost('/crianca/atualizar-fixos',
+    {crianca_id: criancaAtual.id, dias, tipo: tipoEditarAtual});
+  if (!d.ok) { alert(d.erro); return; }
+  criancaAtual.dias      = d.dias;
+  criancaAtual.tipo_fixo = d.tipo_fixo;
+  // Depois do corte, o backend congela o dia de hoje: a rotina muda, hoje não.
+  if (d.hoje_congelado)
+    alert(`A rotina semanal foi salva. O almoço de hoje não mudou, porque o horário de alteração (${HORA_CORTE}) já passou.`);
+  mostrarPerfil();
 }
 
 // ── Avulsas ──────────────────────────────────────────────────────────────────
 async function abrirAvulsas() {
   irPara('tela-avulsa');
-  // Calcular próximos 5 dias úteis (a partir de hoje)
-  const hoje = new Date();
-  hoje.setHours(0,0,0,0);
-  const uteis = [];
-  let cursor = new Date(hoje);
-  while (uteis.length < 5) {
-    const dow = cursor.getDay();  // 0=dom, 6=sab
-    if (dow >= 1 && dow <= 5) uteis.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  const min = uteis[0].toISOString().split('T')[0];
-  const max = uteis[uteis.length - 1].toISOString().split('T')[0];
+  // As datas vêm do /dias (próximos 5 dias úteis já calculados pelo servidor),
+  // e não do relógio do aparelho — que pode estar errado ou em outro fuso.
   const inp = document.getElementById('avulsa-data');
-  inp.min   = min;
-  inp.max   = max;
+  const abertos = diasAtuais.filter(d => d.aberto);
+  if (abertos.length) {
+    inp.min = abertos[0].data;
+    inp.max = diasAtuais[diasAtuais.length - 1].data;
+  }
   inp.value = '';
+
+  // Se hoje já fechou, avisa em vez de deixar o pai descobrir no erro
+  const primeiroFechado = diasAtuais.length && !diasAtuais[0].aberto;
+  const av = document.getElementById('avulsa-aviso-horario');
+  if (av) av.style.display = primeiroFechado ? '' : 'none';
   // Resetar quantidade para 1
   qtdAvulsaAtual = 1;
   document.querySelectorAll('#seg-qtd-avulsa button').forEach((b, i) => {
@@ -1294,31 +1466,22 @@ function setTipoAvulsa(t, btn) {
 async function pedirAvulsa() {
   const data = document.getElementById('avulsa-data').value;
   if (!data) { alert('Selecione uma data.'); return; }
-  try {
-    const r = await fetch(`${API}/pedir-avulso`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        crianca_id: criancaAtual.id,
-        data,
-        tipo: tipoAvulsaAtual,
-        quantidade: qtdAvulsaAtual
-      })
-    });
-    const d = await r.json();
-    if (d.ok) { document.getElementById('avulsa-data').value = ''; await carregarAvulsas(); }
-    else alert(d.erro || 'Erro ao pedir marmita.');
-  } catch { alert('Erro de conexão.'); }
+  const d = await apiPost('/pedir-avulso', {
+    crianca_id: criancaAtual.id,
+    data,
+    tipo: tipoAvulsaAtual,
+    quantidade: qtdAvulsaAtual
+  });
+  if (!d.ok) { alert(d.erro); return; }
+  document.getElementById('avulsa-data').value = '';
+  await carregarAvulsas();
 }
 
 async function cancelarAvulsa(data, btn) {
   btn.disabled = true;
-  try {
-    await fetch(`${API}/cancelar-avulso`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({crianca_id: criancaAtual.id, data})
-    });
-    await carregarAvulsas();
-  } catch { btn.disabled = false; }
+  const d = await apiPost('/cancelar-avulso', {crianca_id: criancaAtual.id, data});
+  if (!d.ok) { alert(d.erro); btn.disabled = false; return; }
+  await carregarAvulsas();
 }
 
 // ── Cadastrar ─────────────────────────────────────────────────────────────────
@@ -1478,6 +1641,9 @@ function copiarCodigo() {
     prompt('Copie o link:', url);
   }
 }
+
+// Restaura o banner do modo escola se o código já foi validado antes
+window.addEventListener('DOMContentLoaded', aplicarModoEscola);
 
 // Abre a lista automaticamente se a URL tiver ?lista=CODIGO
 (function() {
