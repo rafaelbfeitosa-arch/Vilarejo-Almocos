@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The project is split into two parts:
 - **Frontend** — a single `index.html` (vanilla JS, no build step) hosted via GitHub Pages or static hosting
-- **Backend** — a Flask app deployed on PythonAnywhere at `https://rafaelbf.pythonanywhere.com`. The source lives in its own **private** repo, `Vilarejo-Backend` (`C:\Users\rafae\Vilarejo-Backend\app.py`, ~2900 lines, serves both apps). It is private because it holds the admin routes and auth logic; the two frontend repos must stay public to be served by GitHub Pages. `backend/flask_app.py` in this repo is a leftover stub containing only imports — not the running code.
+- **Backend** — a Flask app deployed on PythonAnywhere at `https://rafaelbf.pythonanywhere.com`. The source lives in its own **private** repo, `Vilarejo-Backend` (`C:\Users\rafae\Vilarejo-Backend\app.py`, ~2900 lines, serves both apps). It is private because it holds the admin routes and auth logic; the two frontend repos must stay public to be served by GitHub Pages.
 
 ## Architecture
 

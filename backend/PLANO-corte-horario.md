@@ -3,8 +3,8 @@
 **Status: implementado.** Este documento é o roteiro de deploy e a explicação das
 decisões — não é mais um plano pendente.
 
-O backend real é `C:\Users\rafae\Vilarejo-Backend\app.py`, que roda no PythonAnywhere.
-O `backend/flask_app.py` deste repo é um stub de imports sem uso.
+O backend real é `C:\Users\rafae\Vilarejo-Backend\app.py` — repositório privado
+`rafaelbfeitosa-arch/Vilarejo-Backend` —, que roda no PythonAnywhere.
 
 ## A regra
 
