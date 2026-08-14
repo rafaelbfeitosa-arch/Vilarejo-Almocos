@@ -690,39 +690,6 @@
     .lista-item:last-child { border-bottom: none; }
     .lista-nome { font-size: 15px; font-weight: 500; flex: 1; color: var(--tinta); }
 
-    /* ───── Código box ───── */
-    .codigo-box {
-      background: linear-gradient(135deg, var(--linho-suave), var(--creme));
-      border: 1.5px dashed #b8c9a7;
-      border-radius: 16px;
-      padding: 13px 18px;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .codigo-valor {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      color: var(--musgo);
-    }
-    .copy-btn {
-      background: var(--musgo);
-      color: var(--creme);
-      border: none;
-      border-radius: 12px;
-      padding: 10px 16px;
-      font-size: 13.5px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      font-family: inherit;
-    }
-    .copy-btn:active { background: var(--musgo-fundo); }
-
     /* ───── Modo escola ───── */
     .prof-banner {
       display: none;
@@ -982,14 +949,6 @@
 
   <!-- TELA: LISTA DE ALMOÇOS -->
   <div class="screen" id="tela-lista">
-    <div class="codigo-box">
-      <div>
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:600;color:var(--tinta-suave);font-style:italic;margin-bottom:2px">código de acesso</div>
-        <div class="codigo-valor" id="lista-codigo-display">VILAREJO</div>
-      </div>
-      <button class="copy-btn" onclick="copiarCodigo()">🔗 Copiar link</button>
-    </div>
-
     <div class="lista-tabs">
       <button class="lista-tab" id="tab-ontem" onclick="selecionarDiaLista(-1,this)">← Ontem</button>
       <button class="lista-tab on" id="tab-hoje"  onclick="selecionarDiaLista(0,this)">Hoje</button>
@@ -1009,8 +968,6 @@
 <script>
 const API = 'https://rafaelbf.pythonanywhere.com';
 const DIAS_LABEL = {Segunda:'Segunda',Terca:'Terça',Quarta:'Quarta',Quinta:'Quinta',Sexta:'Sexta'};
-
-const CODIGO_ESCOLA   = 'VILAREJO';
 
 // Corte de edição para os pais: o almoço de HOJE só pode mudar até este horário.
 // Valor apenas informativo/visual — quem decide de fato é o backend (fuso do servidor).
@@ -1504,7 +1461,6 @@ function acessarLista() {
 function abrirLista(offset) {
   diaListaOffset = (offset !== undefined) ? offset : 0;
   irPara('tela-lista');
-  document.getElementById('lista-codigo-display').textContent = CODIGO_ESCOLA;
   atualizarTabsLista();
   carregarLista();
 }
@@ -1630,26 +1586,15 @@ function renderLista(lista) {
   elCont.innerHTML = html;
 }
 
-function copiarCodigo() {
-  const data = getDataOffset(diaListaOffset);
-  const url  = `${location.origin}${location.pathname}?lista=${CODIGO_ESCOLA}&data=${data}`;
-  if (navigator.share) {
-    navigator.share({ title: 'Lista de Almoços · Vilarejo', url });
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => alert('Link copiado! ✓'));
-  } else {
-    prompt('Copie o link:', url);
-  }
-}
-
 // Restaura o banner do modo escola se o código já foi validado antes
 window.addEventListener('DOMContentLoaded', aplicarModoEscola);
 
-// Abre a lista automaticamente se a URL tiver ?lista=CODIGO
+// Abre a lista direto se a URL tiver ?lista — só a presença importa, o valor não.
+// Assim os links já compartilhados continuam funcionando sem que nenhum código
+// precise existir aqui: quem controla o acesso é o portal.
 (function() {
   const p = new URLSearchParams(location.search);
-  const codigo = (p.get('lista') || '').toUpperCase();
-  if (codigo === CODIGO_ESCOLA) {
+  if (p.has('lista')) {
     const data  = p.get('data') || '';
     let offset  = 0;
     if (data) {
