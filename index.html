@@ -749,7 +749,7 @@
   </header>
 
   <div class="prof-banner" id="prof-banner">
-    <span>🔑 <strong>Modo escola</strong> — edição sem limite de horário</span>
+    <span>🔑 <strong>Acesso restrito</strong> — edição sem limite de horário</span>
     <button class="prof-sair" onclick="sairModoEscola()">Sair</button>
   </div>
 
@@ -785,7 +785,7 @@
       📋 Ver lista de almoços do dia
     </button>
     <button class="btn btn-secondary" id="btn-modo-escola" onclick="irPara('tela-prof')">
-      🔑 Modo escola — editar sem limite de horário
+      🔑 Acesso restrito
     </button>
 
     <div class="divider-label"><span>primeira vez? cadastre a criança</span></div>
@@ -942,7 +942,7 @@
       </button>
     </div>
     <button class="btn btn-primary" id="btn-prof-entrar" onclick="entrarModoEscola()">
-      🔑 Entrar no modo escola
+      🔑 Entrar
     </button>
     <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
   </div>
@@ -1082,7 +1082,7 @@ const TELAS = {
   'tela-avulsa':      { titulo:'Encomendar quentinha',     sub:'Almoço para viagem',    voltar: 'tela-perfil' },
   'tela-cadastrar':   { titulo:'Cadastrar criança',        sub:null,                    voltar: 'tela-home' },
   'tela-lista':       { titulo:'Lista de Almoços',         sub:'Escola Vilarejo',       voltar: 'tela-home' },
-  'tela-prof':        { titulo:'Modo escola',              sub:'Edição sem limite de horário', voltar: 'tela-home' },
+  'tela-prof':        { titulo:'Acesso restrito',          sub:null,                    voltar: 'tela-home' },
 };
 
 function irPara(id) {
