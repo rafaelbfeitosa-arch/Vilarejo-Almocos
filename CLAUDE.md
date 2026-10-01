@@ -27,12 +27,14 @@ Single Flask file serving two independent apps sharing one process:
 
 | App | DB | Purpose |
 |---|---|---|
-| Almoço Escolar | `almoco.db` (SQLite) | Children, fixed days, confirmations, avulsos, cardápio |
+| Almoço Escolar | `almoco.db` (SQLite) | Children, fixed days, confirmations, extra adult lunches, cardápio |
 | Tardes Brincantes | `tardes_brincantes.db` (SQLite) | After-school program presence |
 
 **Almoço DB tables:** `criancas`, `dias_fixos`, `confirmacoes`, `avulsos`, `cardapio`
 
-**Key logic:** A child's lunch for a given day is computed by `status_dia()` — it layers fixed recurring days → exception records in `confirmacoes` → one-off `avulsos`. The `lista_do_dia()` helper assembles the full daily list used by both the API and email/XLSX reports.
+**Key logic:** A child's lunch for a given day is computed by `status_dia()` — it layers fixed recurring days → exception records in `confirmacoes`. The `lista_do_dia()` helper assembles the daily list of **students** used by the API and the email/XLSX reports.
+
+**`avulsos` is not the child's lunch.** Despite the name (it started as "quentinha for the child to take on a trip"), the table now holds **extra adult lunches ordered by the family and billed to the student's account** — `local='escola'` is a plate served at school, `local='casa'` is a pot to take home. They are separate portions: `status_dia()` deliberately ignores the table, and `extras_do_dia()` returns them as their own list. `/lista-dia` concatenates both, tagged by `categoria` (`aluno` | `adulto`). Never merge them back by `crianca_id` — that bug made a child with a fixed day plus two extra portions count as 2 instead of 3. See `backend/PLANO-almoco-pais.md`.
 
 **Authentication:** Three secrets from `.env` — `LISTA_SECRET` (admin/lista access), `TB_SECRET` (Tardes Brincantes admin) and `PROF_SECRET` (teachers/admin: edit lunches with no time limit). The cook's code (`COZINHA`) is frontend-only and not validated by the backend.
 

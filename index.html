@@ -502,6 +502,94 @@
     }
     .avulso-del:hover { color: var(--rosa); background: var(--rosa-claro); }
 
+    /* ───── Convite: o almoço dos pais ───── */
+    /* Fica fora do bloco verde dos dias da criança de propósito. Enfiado entre
+       as opções do filho, o pedido era lido como mais uma escolha dela — e
+       ninguém percebia que dava para pedir almoço para si. */
+    .convite {
+      margin-top: 20px;
+      padding: 18px 18px 16px;
+      border-radius: var(--raio-card);
+      background: linear-gradient(140deg, var(--terra-claro), #f8ecd9);
+      border: 1px solid #e2c6a4;
+      box-shadow: var(--sombra-suave);
+    }
+    .convite h3 {
+      font-size: 21px;
+      line-height: 1.2;
+      color: var(--carvao);
+      margin-bottom: 5px;
+    }
+    .convite p {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #6b4a2a;
+      margin-bottom: 14px;
+    }
+    .convite button {
+      width: 100%;
+      min-height: 50px;
+      padding: 14px;
+      border: none;
+      border-radius: var(--raio-botao);
+      background: var(--terra);
+      color: var(--creme-papel);
+      font-family: inherit;
+      font-size: 15.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--sombra-botao);
+    }
+    .convite button:active { transform: translateY(1px); box-shadow: none; }
+
+    /* ───── Onde comer: prato na escola × pote para levar ───── */
+    .local-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .local-opt {
+      padding: 18px 14px 16px;
+      border-radius: var(--raio-suave);
+      border: 1.5px solid var(--linho);
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      color: var(--tinta-suave);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .local-opt .icone { display: block; font-size: 26px; margin-bottom: 8px; }
+    .local-opt .nome {
+      display: block;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 19px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--tinta);
+      margin-bottom: 4px;
+    }
+    .local-opt .como { display: block; font-size: 12.5px; line-height: 1.4; }
+    .local-opt.on {
+      border-color: var(--terra);
+      background: var(--terra-claro);
+      box-shadow: 0 2px 10px rgba(176, 115, 73, 0.18);
+    }
+    .local-opt.on .nome, .local-opt.on .como { color: #6b4a2a; }
+    .local-opt:focus-visible { outline: 2px solid var(--ocre); outline-offset: 2px; }
+
+    .badge-local {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--terra-claro);
+      color: var(--terra);
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+
     /* ───── Hints / empty / alert ───── */
     .hint {
       font-size: 14px;
@@ -688,6 +776,13 @@
       gap: 10px;
     }
     .lista-item:last-child { border-bottom: none; }
+    /* Os almoços dos pais não são de turma nenhuma — cor de barro para a
+       cozinha não confundir com a lista das crianças. */
+    .lista-grupo-pais .lista-grupo-header {
+      color: var(--terra);
+      border-bottom-color: #e2c6a4;
+    }
+    .lista-turma { display: block; font-size: 12px; font-weight: 400; color: var(--tinta-suave); }
     .lista-nome { font-size: 15px; font-weight: 500; flex: 1; color: var(--tinta); }
 
     /* ───── Modo escola ───── */
@@ -848,40 +943,55 @@
     <button class="btn btn-secondary" onclick="irPara('tela-perfil')" style="margin-top:10px">← Cancelar</button>
   </div>
 
-  <!-- TELA: PEDIR AVULSA -->
-  <div class="screen" id="tela-avulsa">
-    <p class="hint" style="margin-bottom:22px;font-size:14.5px">
-      🍱 <strong>Quentinha</strong> é um almoço preparado na escola para a criança <strong>levar para viagem</strong>.<br>
-      Escolha a data (próximos <strong>5 dias úteis</strong>) e quantas quentinhas quer. <strong>Não altera os seus dias fixos.</strong>
-    </p>
-    <div class="alert alert-err" id="avulsa-aviso-horario" style="display:none">
-      ⏰ O prazo para encomendar para <strong>hoje</strong> encerrou às 10h.
-      Escolha outro dia ou fale com a secretaria.
+  <!-- TELA: ALMOÇO PARA OS PAIS -->
+  <div class="screen" id="tela-extras">
+    <p class="hint" id="extras-intro" style="margin-bottom:22px;font-size:14.5px"></p>
+
+    <div class="alert alert-err" id="extras-aviso-horario" style="display:none">
+      O pedido para <strong>hoje</strong> fechou às 10h. Escolha outro dia ou
+      fale com a secretaria.
     </div>
+
+    <label class="sel-label" style="margin-bottom:10px">Onde vai comer?</label>
+    <div class="local-grid" id="grid-local">
+      <button class="local-opt" onclick="setLocalExtra('escola',this)">
+        <span class="icone">🍽</span>
+        <span class="nome">Na escola</span>
+        <span class="como">Servido no prato, no horário das crianças</span>
+      </button>
+      <button class="local-opt" onclick="setLocalExtra('casa',this)">
+        <span class="icone">🥡</span>
+        <span class="nome">Para levar</span>
+        <span class="como">Embalado em pote para comer em casa</span>
+      </button>
+    </div>
+
     <div class="field">
-      <label class="sel-label">Data desejada</label>
-      <input type="date" id="avulsa-data">
+      <label class="sel-label">Que dia?</label>
+      <input type="date" id="extras-data">
     </div>
+
     <label class="sel-label" style="margin-bottom:8px">Tipo de almoço</label>
-    <div class="seg" id="seg-tipo-avulsa">
-      <button class="on" onclick="setTipoAvulsa('tradicional',this)">🍖 Tradicional</button>
-      <button           onclick="setTipoAvulsa('vegano',this)"     >🥦 Vegano</button>
-      <button           onclick="setTipoAvulsa('marmita',this)"    >🍱 Marmita</button>
+    <div class="seg" id="seg-tipo-extras">
+      <button class="on" onclick="setTipoExtra('tradicional',this)">🍖 Tradicional</button>
+      <button           onclick="setTipoExtra('vegano',this)"     >🥦 Vegano</button>
     </div>
-    <div class="field" style="margin-top:14px">
-      <label class="sel-label">Quantas quentinhas?</label>
-      <div class="seg" id="seg-qtd-avulsa">
-        <button class="on" onclick="setQtdAvulsa(1,this)">1</button>
-        <button           onclick="setQtdAvulsa(2,this)">2</button>
-        <button           onclick="setQtdAvulsa(3,this)">3</button>
-        <button           onclick="setQtdAvulsa(4,this)">4</button>
-        <button           onclick="setQtdAvulsa(5,this)">5</button>
+
+    <div class="field">
+      <label class="sel-label">Quantas porções?</label>
+      <div class="seg" id="seg-qtd-extras">
+        <button class="on" onclick="setQtdExtra(1,this)">1</button>
+        <button           onclick="setQtdExtra(2,this)">2</button>
+        <button           onclick="setQtdExtra(3,this)">3</button>
+        <button           onclick="setQtdExtra(4,this)">4</button>
+        <button           onclick="setQtdExtra(5,this)">5</button>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="pedirAvulsa()">Confirmar encomenda</button>
+
+    <button class="btn btn-primary" onclick="pedirExtra()">Confirmar pedido</button>
     <div class="divider"></div>
-    <p class="sel-label" style="margin-bottom:10px">Suas encomendas</p>
-    <div id="avulsa-lista"></div>
+    <p class="sel-label" style="margin-bottom:10px">Pedidos feitos</p>
+    <div id="extras-lista"></div>
     <button class="btn btn-secondary" onclick="irPara('tela-perfil')" style="margin-top:10px">← Voltar</button>
   </div>
 
@@ -983,8 +1093,9 @@ let cardapioAtual   = {};     // {Segunda: "...", Terca: "...", ...}
 let diasAtuais      = [];     // último /dias — fonte da verdade sobre quais dias estão abertos
 let diaListaOffset = 0;    // -1=ontem, 0=hoje, 1=amanhã
 let tipoEditarAtual  = 'tradicional';
-let tipoAvulsaAtual  = 'tradicional';
-let qtdAvulsaAtual   = 1;
+let tipoExtraAtual   = 'tradicional';
+let qtdExtraAtual    = 1;
+let localExtraAtual  = null;   // sem padrão: a escolha tem de ser deliberada
 let cadTurmaAtual    = 'Maternal';
 let tipoCadAtual     = 'tradicional';
 
@@ -1079,7 +1190,7 @@ const TELAS = {
   'tela-home':        { titulo:'Almoço Escolar',           sub:'Escola Vilarejo',       voltar: null },
   'tela-perfil':      { titulo:'Almoço Escolar',           sub:'Confirme o almoço',     voltar: 'tela-home' },
   'tela-editar-dias': { titulo:'Editar dias fixos',        sub:null,                    voltar: 'tela-perfil' },
-  'tela-avulsa':      { titulo:'Encomendar quentinha',     sub:'Almoço para viagem',    voltar: 'tela-perfil' },
+  'tela-extras':      { titulo:'Almoço para os pais',      sub:'Comer aqui ou levar',   voltar: 'tela-perfil' },
   'tela-cadastrar':   { titulo:'Cadastrar criança',        sub:null,                    voltar: 'tela-home' },
   'tela-lista':       { titulo:'Lista de Almoços',         sub:'Escola Vilarejo',       voltar: 'tela-home' },
   'tela-prof':        { titulo:'Acesso restrito',          sub:null,                    voltar: 'tela-home' },
@@ -1262,13 +1373,15 @@ function renderDias(dias) {
       ${actions}
     </div>`;
   }
-  html += `<div style="display:flex;gap:10px;margin-top:18px">
-    <button class="btn btn-secondary" style="flex:1;font-size:13.5px;padding:14px 8px" onclick="abrirEditarDias()">⚙️ Editar dias fixos</button>
-    <button class="btn btn-secondary" style="flex:1;font-size:13.5px;padding:14px 8px" onclick="abrirAvulsas()">🍱 Encomendar quentinha</button>
-  </div>
-  <p class="hint" style="text-align:center;margin-top:10px;font-size:13px">
-    🍱 <strong>Quentinha</strong> = almoço preparado na escola para levar para viagem (uma ou mais).
-  </p>`;
+  const primeiroNome = (criancaAtual.nome || '').split(' ')[0];
+  html += `<button class="btn btn-secondary" style="margin-top:18px"
+                   onclick="abrirEditarDias()">⚙️ Editar dias fixos</button>
+  <div class="convite">
+    <h3>Quer pedir almoço para os pais?</h3>
+    <p>A escola prepara um almoço de adulto para você comer aqui no prato ou
+       levar para casa em pote. A conta entra junto com a de ${primeiroNome}.</p>
+    <button onclick="abrirExtras()">Pedir almoço para adulto</button>
+  </div>`;
   el.innerHTML = html;
 }
 
@@ -1363,12 +1476,28 @@ async function salvarDias() {
   mostrarPerfil();
 }
 
-// ── Avulsas ──────────────────────────────────────────────────────────────────
-async function abrirAvulsas() {
-  irPara('tela-avulsa');
-  // As datas vêm do /dias (próximos 5 dias úteis já calculados pelo servidor),
-  // e não do relógio do aparelho — que pode estar errado ou em outro fuso.
-  const inp = document.getElementById('avulsa-data');
+// ── Almoço para os pais ──────────────────────────────────────────────────────
+// Pedido de adulto, cobrado na conta do aluno. Tela própria porque, misturado
+// às opções da criança, "encomendar quentinha" era lido como coisa do filho.
+const LOCAIS = {
+  escola: { icone: '🍽', curto: 'Na escola',  longo: 'Na escola (prato)' },
+  casa:   { icone: '🥡', curto: 'Para levar', longo: 'Para levar (pote)' },
+};
+
+function marcarUnico(seletor, i) {
+  document.querySelectorAll(seletor).forEach((b, n) => b.classList.toggle('on', n === i));
+}
+
+async function abrirExtras() {
+  irPara('tela-extras');
+  const nome = (criancaAtual.nome || '').split(' ')[0];
+  document.getElementById('extras-intro').innerHTML =
+    `Almoço para adulto. Entra na conta de <strong>${nome}</strong> e não muda ` +
+    `nada no almoço da criança. Dá para pedir nos próximos 5 dias úteis.`;
+
+  // As datas vêm do /dias (os 5 dias úteis que o servidor já calculou), e não
+  // do relógio do aparelho — que pode estar errado ou em outro fuso.
+  const inp = document.getElementById('extras-data');
   const abertos = diasAtuais.filter(d => d.aberto);
   if (abertos.length) {
     inp.min = abertos[0].data;
@@ -1376,69 +1505,95 @@ async function abrirAvulsas() {
   }
   inp.value = '';
 
-  // Se hoje já fechou, avisa em vez de deixar o pai descobrir no erro
-  const primeiroFechado = diasAtuais.length && !diasAtuais[0].aberto;
-  const av = document.getElementById('avulsa-aviso-horario');
-  if (av) av.style.display = primeiroFechado ? '' : 'none';
-  // Resetar quantidade para 1
-  qtdAvulsaAtual = 1;
-  document.querySelectorAll('#seg-qtd-avulsa button').forEach((b, i) => {
-    b.classList.toggle('on', i === 0);
-  });
-  await carregarAvulsas();
+  // Se hoje já fechou, avisa antes — melhor do que deixar o pai descobrir no erro
+  const fechouHoje = diasAtuais.length && !diasAtuais[0].aberto;
+  document.getElementById('extras-aviso-horario').style.display = fechouHoje ? '' : 'none';
+
+  // De propósito sem opção marcada: um padrão aqui faria o pai confirmar sem
+  // perceber que escolheu prato ou pote, que é o engano que esta tela existe
+  // para evitar.
+  localExtraAtual = null;
+  tipoExtraAtual  = 'tradicional';
+  qtdExtraAtual   = 1;
+  marcarUnico('#grid-local .local-opt',   -1);
+  marcarUnico('#seg-tipo-extras button',   0);
+  marcarUnico('#seg-qtd-extras button',    0);
+  await carregarExtras();
 }
 
-function setQtdAvulsa(n, btn) {
-  qtdAvulsaAtual = n;
+function setLocalExtra(l, btn) {
+  localExtraAtual = l;
+  btn.parentElement.querySelectorAll('.local-opt').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function setTipoExtra(t, btn) {
+  tipoExtraAtual = t;
   btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
 }
 
-async function carregarAvulsas() {
-  const el = document.getElementById('avulsa-lista');
+function setQtdExtra(n, btn) {
+  qtdExtraAtual = n;
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function carregarExtras() {
+  const el = document.getElementById('extras-lista');
   el.innerHTML = '<div class="loading">⏳</div>';
   try {
     const r = await fetch(`${API}/avulsos?crianca_id=${criancaAtual.id}`);
     const lista = await r.json();
-    if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum pedido avulso.</div>'; return; }
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty">Nenhum pedido ainda. Escolha onde e quando para pedir o primeiro.</div>';
+      return;
+    }
     el.innerHTML = lista.map(a => {
-      const [y,m,d] = a.data.split('-');
-      const qtd     = a.quantidade || 1;
-      const qtdTxt  = qtd > 1 ? ` <strong style="color:var(--musgo)">×${qtd}</strong>` : '';
+      const [y, m, d] = a.data.split('-');
+      const loc  = LOCAIS[a.local] || LOCAIS.casa;
+      const qtd  = a.quantidade || 1;
+      const cls  = a.tipo === 'vegano' ? 'tag-veg' : 'tag-trad';
+      const tipo = a.tipo === 'vegano' ? '🥦 Vegano' : '🍖 Tradicional';
       return `<div class="avulso-row">
-        <span style="font-size:14.5px;font-weight:500">${d}/${m}/${y}${qtdTxt}</span>
-        <span class="tag ${a.tipo==='vegano'?'tag-veg':a.tipo==='marmita'?'tag-marm':'tag-trad'}">${a.tipo==='vegano'?'🥦 Veg':a.tipo==='marmita'?'🍱 Marm':'🍖 Trad'}</span>
-        <button class="avulso-del" onclick="cancelarAvulsa('${a.data}',this)">✕</button>
+        <span style="flex:1;min-width:0">
+          <span style="font-size:14.5px;font-weight:600">${d}/${m}</span>
+          <span class="badge-local" style="margin-left:7px">${loc.icone} ${loc.curto}</span>
+          <span style="display:block;margin-top:5px;font-size:12.5px;color:var(--tinta-suave)">
+            ${qtd} porç${qtd > 1 ? 'ões' : 'ão'}, ${tipo}
+          </span>
+        </span>
+        <button class="avulso-del" title="Cancelar este pedido"
+                onclick="cancelarExtra('${a.data}','${a.local || 'casa'}',this)">✕</button>
       </div>`;
     }).join('');
-  } catch { el.innerHTML = '<div class="empty">Erro ao carregar.</div>'; }
+  } catch {
+    el.innerHTML = '<div class="empty">Não foi possível carregar os pedidos. Tente de novo.</div>';
+  }
 }
 
-function setTipoAvulsa(t, btn) {
-  tipoAvulsaAtual = t;
-  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-}
-
-async function pedirAvulsa() {
-  const data = document.getElementById('avulsa-data').value;
-  if (!data) { alert('Selecione uma data.'); return; }
+async function pedirExtra() {
+  if (!localExtraAtual) { alert('Escolha onde vai comer: na escola ou para levar.'); return; }
+  const data = document.getElementById('extras-data').value;
+  if (!data) { alert('Escolha o dia do almoço.'); return; }
   const d = await apiPost('/pedir-avulso', {
     crianca_id: criancaAtual.id,
     data,
-    tipo: tipoAvulsaAtual,
-    quantidade: qtdAvulsaAtual
+    tipo:  tipoExtraAtual,
+    local: localExtraAtual,
+    quantidade: qtdExtraAtual
   });
   if (!d.ok) { alert(d.erro); return; }
-  document.getElementById('avulsa-data').value = '';
-  await carregarAvulsas();
+  document.getElementById('extras-data').value = '';
+  await carregarExtras();
 }
 
-async function cancelarAvulsa(data, btn) {
+async function cancelarExtra(data, local, btn) {
   btn.disabled = true;
-  const d = await apiPost('/cancelar-avulso', {crianca_id: criancaAtual.id, data});
+  const d = await apiPost('/cancelar-avulso',
+    {crianca_id: criancaAtual.id, data, local});
   if (!d.ok) { alert(d.erro); btn.disabled = false; return; }
-  await carregarAvulsas();
+  await carregarExtras();
 }
 
 // ── Cadastrar ─────────────────────────────────────────────────────────────────
@@ -1514,38 +1669,63 @@ function renderLista(lista) {
   const elCont   = document.getElementById('lista-conteudo');
   const elResumo = document.getElementById('lista-resumo');
 
-  if (!lista || !lista.length) {
+  // O backend manda alunos e almoços de adulto no mesmo array, separados pelo
+  // `categoria`. A cozinha precisa dos dois números, nunca da soma só.
+  lista = lista || [];
+  const alunos = lista.filter(x => x.categoria !== 'adulto');
+  const pais   = lista.filter(x => x.categoria === 'adulto');
+
+  if (!alunos.length && !pais.length) {
     elResumo.innerHTML = '';
     elCont.innerHTML   = '<div class="empty">Nenhum almoço confirmado para este dia.</div>';
     return;
   }
 
-  // Totais
+  // Totais em porções — é porção que vai para a panela, não pessoa
   const totais = { tradicional: 0, vegano: 0, marmita: 0 };
-  let totalQtd = 0, totalFixo = 0, totalAvulso = 0;
-  for (const item of lista) {
+  const somar = (item) => {
     const tipo = item.tipo || 'tradicional';
-    const qtd  = item.quantidade || 1;
-    totais[tipo] = (totais[tipo] || 0) + qtd;
-    totalQtd += qtd;
-    if (item.origem === 'avulso') totalAvulso += qtd;
-    else                          totalFixo   += qtd;
+    totais[tipo] = (totais[tipo] || 0) + (item.quantidade || 1);
+  };
+
+  let totalAlunos = 0, totalFixo = 0, totalAvulso = 0;
+  for (const a of alunos) {
+    const qtd = a.quantidade || 1;
+    somar(a);
+    totalAlunos += qtd;
+    if (a.origem === 'avulso') totalAvulso += qtd;
+    else                       totalFixo   += qtd;
   }
+
+  let noPrato = 0, emPote = 0;
+  for (const p of pais) {
+    const qtd = p.quantidade || 1;
+    somar(p);
+    if (p.local === 'escola') noPrato += qtd;
+    else                      emPote  += qtd;
+  }
+  const totalPais = noPrato + emPote;
+  const totalQtd  = totalAlunos + totalPais;
 
   elResumo.innerHTML = `
     <div class="lista-summary">
-      <div class="lista-summary-title">Total: ${totalQtd} almoço${totalQtd !== 1 ? 's' : ''}</div>
+      <div class="lista-summary-title">Total: ${totalQtd} porç${totalQtd !== 1 ? 'ões' : 'ão'}</div>
       ${totais.tradicional ? `<div class="lista-summary-row"><span>🍖 Tradicional</span><strong>${totais.tradicional}</strong></div>` : ''}
       ${totais.vegano      ? `<div class="lista-summary-row"><span>🥦 Vegano</span><strong>${totais.vegano}</strong></div>`      : ''}
       ${totais.marmita     ? `<div class="lista-summary-row"><span>🍱 Marmita</span><strong>${totais.marmita}</strong></div>`    : ''}
       <div class="lista-summary-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(74,93,58,.2)">
-        <span>🔁 Fixos / ✨ Avulsos</span><strong>${totalFixo} / ${totalAvulso}</strong>
+        <span>Crianças <em style="font-style:normal;color:var(--tinta-suave);font-size:13px">(🔁 ${totalFixo} fixos, ✨ ${totalAvulso} só hoje)</em></span>
+        <strong>${totalAlunos}</strong>
       </div>
+      ${totalPais ? `<div class="lista-summary-row">
+        <span>Pais <em style="font-style:normal;color:var(--tinta-suave);font-size:13px">(🍽 ${noPrato} no prato, 🥡 ${emPote} em pote)</em></span>
+        <strong>${totalPais}</strong>
+      </div>` : ''}
     </div>`;
 
-  // Agrupa por turma
+  // Agrupa os alunos por turma
   const grupos = {};
-  for (const item of lista) {
+  for (const item of alunos) {
     const turma = item.turma || 'Sem turma';
     if (!grupos[turma]) grupos[turma] = [];
     grupos[turma].push(item);
@@ -1583,6 +1763,34 @@ function renderLista(lista) {
     }
     html += '</div>';
   }
+
+  // Almoços dos pais — grupo próprio, porque o que muda aqui é a embalagem
+  if (pais.length) {
+    html += `<div class="lista-grupo lista-grupo-pais">
+      <div class="lista-grupo-header">
+        <span>Almoços para os pais</span>
+        <span>🍽 ${noPrato} no prato, 🥡 ${emPote} em pote</span>
+      </div>`;
+    for (const p of pais) {
+      const tipo    = p.tipo || 'tradicional';
+      const qtd     = p.quantidade || 1;
+      const qtdHtml = qtd > 1 ? ` <strong style="color:var(--terra)">×${qtd}</strong>` : '';
+      const cls     = tipo === 'vegano' ? 'tag-veg' : 'tag-trad';
+      const emoji   = tipo === 'vegano' ? '🥦' : '🍖';
+      const loc     = LOCAIS[p.local] || LOCAIS.casa;
+      html += `<div class="lista-item">
+        <span class="lista-nome">${p.nome}${qtdHtml}
+          <span class="lista-turma">${p.turma || ''}</span>
+        </span>
+        <span style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <span class="badge-local">${loc.icone} ${loc.curto}</span>
+          <span class="tag ${cls}">${emoji} ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}</span>
+        </span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
   elCont.innerHTML = html;
 }
 
