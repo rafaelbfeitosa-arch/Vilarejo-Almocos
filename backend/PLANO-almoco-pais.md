@@ -1,8 +1,8 @@
 # Almoço para os pais — prato na escola ou pote para levar
 
-**Status: commitado nos dois repos, nada em produção.** Backend com testes
-passando (`tests/test_extras.py`, `tests/test_relatorio_xlsx.py`), frontend
-refeito. Falta uma reconciliação antes de subir — descrita no fim deste arquivo.
+**Status: commitado nos dois repos, pronto para deploy.** Backend com testes
+passando (`test_extras`, `test_relatorio_xlsx`, `test_email_cozinha`), frontend
+refeito.
 
 ## O problema
 
@@ -62,10 +62,36 @@ Depois de um mês rodando, `DROP TABLE avulsos_antes_local`.
 | `/lista-dia` | devolve alunos **e** pedidos de adulto no mesmo array, separados por `categoria` (`aluno` \| `adulto`) |
 | Tela da lista (escola) | grupo próprio "Almoços para os pais", e o resumo separa crianças de pais, com 🍽 no prato e 🥡 em pote |
 | `/admin` | seção "Almoços para os pais — hoje" + "Próximos almoços para os pais" com coluna Onde |
+| E-mail das 10h05 para a cozinha | `_enviar_email()` **passou a existir** — ver abaixo — com o bloco prato/pote |
 | Backup diário das 18h | bloco dos almoços dos pais no HTML e no texto |
 | XLSX mensal | aba nova "Almoços dos pais" (um pedido por linha) e Resumo com coluna **Almoços dos pais**; valor virou `(C + D) × 20` |
 
 Preço: R$ 20, igual ao do aluno (decidido em 01/10/2026).
+
+## O e-mail da cozinha não existia
+
+Descoberto em 01/10/2026, comparando o `app.py` baixado do PythonAnywhere com o
+repositório: **os dois são idênticos**, e em nenhum dos dois existe
+`_enviar_email()`. A função era chamada por `/enviar-lista` e nunca foi definida.
+A rota levantava `NameError`, devolvia 500, e **a cozinha nunca recebeu o e-mail
+das 10h05**. A `COZINHA_EMAIL` do `.env` nunca tinha sido lida por nada.
+
+A GitHub Action vem falhando todo dia útil desde 14/08/2026 — quando o
+`|| echo` que engolia o erro foi removido (commit `7ec5437` do repo do frontend).
+Antes disso ela ficava verde escondendo exatamente esta falha. **Vale olhar a aba
+Actions**: se os agendamentos foram desativados por falha repetida, é preciso
+reativá-los.
+
+`_enviar_email()` agora existe, já com o bloco prato/pote, e tem teste
+(`tests/test_email_cozinha.py`, com SMTP falso). Duas correções entraram junto,
+na mesma rota:
+
+- `/enviar-lista` comparava `secret != LISTA_SECRET` direto, o que **autoriza
+  qualquer um** quando a variável não está no `.env`, porque `"" != ""` é falso.
+  Passou a usar `_check_secret()`, que falha fechado — a regra que o resto do
+  arquivo já seguia.
+- Um disparo manual no fim de semana estourava `IndexError` em `DIAS_PT`. Agora
+  devolve `{"ok": false, "motivo": "fim_de_semana"}`.
 
 ## Deploy
 
@@ -83,27 +109,15 @@ A ordem normal do projeto é **backend antes do frontend**. Aqui ela é
 obrigatória: o frontend novo manda `local`, e o backend velho ignoraria o campo e
 gravaria tudo como um pedido só por dia.
 
-Falta um ponto antes de subir o `app.py`:
-
-> **A cópia versionada do `app.py` não bate com a produção.** A função
-> `_enviar_email()`, chamada em `/enviar-lista`, **não existe neste repositório** —
-> em nenhum commit. A GitHub Action das 10h05 roda com `--fail` e está verde,
-> então a produção tem essa função e a nossa cópia não. Subir o arquivo como está
-> quebraria o e-mail da lista para a cozinha.
->
-> É também o único lugar onde o prato/pote **ainda não aparece**: o e-mail que a
-> cozinha recebe de manhã sai de `_enviar_email()`. Sem ele, a cozinha vê a
-> separação no `/admin`, na tela da lista e no backup das 18h — mas não no e-mail
-> das 10h05, que é o que ela realmente lê.
+O `app.py` da branch é o arquivo de produção mais este trabalho — conferido byte
+a byte em 01/10/2026 contra o download do PythonAnywhere. Não há reconciliação
+pendente.
 
 Checklist:
 
-- [ ] baixar o `app.py` de produção do PythonAnywhere
-- [ ] reconciliar: trazer `_enviar_email()` para o repo, ou levar este commit
-      para cima do arquivo de produção
-- [ ] adicionar o bloco prato/pote ao e-mail da cozinha em `_enviar_email()`
-      (`bloco_extras()` do backup diário serve de molde)
 - [ ] subir o `app.py` no PythonAnywhere e dar **Reload**
+- [ ] disparar a Action `enviar-lista` à mão (`workflow_dispatch`) e conferir que
+      o e-mail chega na cozinha — é a primeira vez que ele vai chegar
 - [ ] abrir `/admin?secret=…` e conferir que a migração rodou (a seção "Almoços
       para os pais — hoje" aparece sem erro)
 - [ ] conferir `PRAGMA table_info(avulsos)` com a coluna `local`
