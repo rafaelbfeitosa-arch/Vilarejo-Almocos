@@ -20,6 +20,8 @@ Single-page app with screen-based navigation (no router library). Key constants 
 
 Screens (`tela-*` divs) are shown/hidden via `irPara(id)`. State is held in module-level `let` variables (`criancaAtual`, `cardapioAtual`, etc.).
 
+**Frontend design:** for any UI/visual work on `index.html` (new screens, layout, styling), use the `frontend-design` skill (installed in `.claude/skills/frontend-design`). Apply it within the existing Waldorf visual identity shared by Almoço, Tardes Brincantes and the parents' portal — don't replace the palette, fonts or tone with a new aesthetic. Keep it mobile-first and vanilla (no frameworks, no build step).
+
 ### Backend (`Vilarejo-Backend/app.py`, private repo)
 Single Flask file serving two independent apps sharing one process:
 
