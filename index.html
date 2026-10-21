@@ -877,6 +877,16 @@
     }
     .cham-tag.falta { background: var(--rosa-claro); color: #8b3a3a; }
     .cham-tag.extra { background: var(--terra-claro); color: var(--terra); }
+    /* Ao incluir alguém, a escolha do tipo abre logo abaixo do nome */
+    .cham-item.escolhendo { border-bottom: none; }
+    .cham-picker { list-style: none; padding: 0 4px 14px; border-bottom: 1px solid var(--linho-suave); }
+    .cham-picker .tipo-picker { margin-top: 0; }
+    .cham-picker-rodape { display: flex; justify-content: space-between; align-items: center; }
+    .cham-picker-rodape .hint { margin: 0; font-size: 12.5px; }
+    .cham-cancelar {
+      background: none; border: none; color: var(--tinta-suave); font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 2px;
+    }
     .cham-sub {
       font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic;
       font-size: 15px; color: var(--tinta-suave);
@@ -1821,6 +1831,12 @@ const CHAMADA_KEY = 'tb_prof';
 let palavraProf   = localStorage.getItem(CHAMADA_KEY) || null;
 let diaChamada    = null;     // 'AAAA-MM-DD'
 let alunosChamada = [];
+let escolhendoChamada = null;   // id do aluno com a escolha do tipo aberta
+const TIPOS_CHAMADA = [
+  {v:'tradicional', emoji:'🍖', label:'Tradicional'},
+  {v:'vegano',      emoji:'🥦', label:'Vegano'},
+  {v:'marmita',     emoji:'🍱', label:'Marmita'},
+];
 const DIAS_CHAMADA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const ORDEM_TURMAS = ['Maternal','Jardim','1º ano','2º ano','3º ano'];
 
@@ -1913,6 +1929,7 @@ function mudarDiaChamada(passo) {
   const [y, m, d] = diaChamada.split('-').map(Number);
   const dt = new Date(y, m - 1, d + passo);
   diaChamada = isoLocal(diaUtil(dt, passo));
+  escolhendoChamada = null;
   carregarChamada();
 }
 
@@ -1948,11 +1965,24 @@ function itemChamadaHTML(a) {
   // Tradicional é o padrão; só vale avisar quando é outro.
   const tipo = a.tipo === 'vegano'  ? '<span class="cham-tipo">🥦 Vegano</span>'
              : a.tipo === 'marmita' ? '<span class="cham-tipo">🍱 Marmita</span>' : '';
-  return `<li class="cham-item ${a.presente ? 'on' : ''}" id="cham-${a.id}"
+  const escolhendo = escolhendoChamada === a.id;
+  const item = `<li class="cham-item ${a.presente ? 'on' : ''} ${escolhendo ? 'escolhendo' : ''}" id="cham-${a.id}"
               role="checkbox" aria-checked="${a.presente}" onclick="marcarChamada(${a.id})">
     <span class="cham-box">${a.presente ? '✓' : ''}</span>
     <span class="cham-nome">${esc(a.nome)}${tipo}</span>
     ${tag}
+  </li>`;
+  if (!escolhendo) return item;
+  // O tipo de costume da criança vem destacado; um toque em qualquer um já salva.
+  return item + `<li class="cham-picker">
+    <div class="tipo-picker">${TIPOS_CHAMADA.map(t =>
+      `<button class="tipo-opt ${a.tipo === t.v ? 'on' : ''}"
+               onclick="incluirChamada(${a.id}, '${t.v}')">${t.emoji}<br>${t.label}</button>`
+    ).join('')}</div>
+    <div class="cham-picker-rodape">
+      <p class="hint">Toque no tipo para incluir o almoço.</p>
+      <button class="cham-cancelar" onclick="fecharEscolhaChamada()">Cancelar</button>
+    </div>
   </li>`;
 }
 
@@ -1997,21 +2027,44 @@ function renderResumoChamada() {
     (vieram ? `<span class="v">+${vieram} sem marcação</span>` : '');
 }
 
-async function marcarChamada(id) {
+// Tocar em quem almoça dá falta na hora. Tocar em quem não almoça abre a
+// escolha do tipo — incluir sem perguntar cobraria o tipo errado.
+function marcarChamada(id) {
+  const a = alunosChamada.find(x => x.id === id);
+  if (!a) return;
+  if (a.presente) { salvarChamada(id, false); return; }
+  escolhendoChamada = escolhendoChamada === id ? null : id;
+  renderChamada();
+}
+
+function fecharEscolhaChamada() {
+  escolhendoChamada = null;
+  renderChamada();
+}
+
+function incluirChamada(id, tipo) {
+  salvarChamada(id, true, tipo);
+}
+
+async function salvarChamada(id, novo, tipo) {
   const a = alunosChamada.find(x => x.id === id);
   if (!a) return;
   const el = document.getElementById(`cham-${id}`);
-  const novo = !a.presente;
   el.classList.add('salvando');
   try {
+    const corpo = {crianca_id: id, data: diaChamada, presente: novo};
+    if (tipo) corpo.tipo = tipo;
     const r = await fetch(`${API}/chamada`, {
       method: 'POST',
       headers: {'Content-Type':'application/json', 'X-Tb-Prof': palavraProf},
-      body: JSON.stringify({crianca_id: id, data: diaChamada, presente: novo}),
+      body: JSON.stringify(corpo),
     });
     if (r.status === 401) { palavraRecusada(); return; }
     if (!r.ok) throw new Error();
+    const d = await r.json().catch(() => ({}));
     a.presente = novo;
+    if (d.tipo) a.tipo = d.tipo;
+    if (escolhendoChamada === id) escolhendoChamada = null;
     renderChamada();   // redesenha o item e as contagens das turmas
   } catch {
     el.classList.remove('salvando');
