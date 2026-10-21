@@ -824,6 +824,65 @@
       padding: 8px 2px 0;
     }
 
+    /* ───── Chamada das professoras (mesma tela das Tardes Brincantes) ───── */
+    .cham-nav {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .cham-nav button {
+      width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%;
+      border: 1.5px solid var(--linho); background: #fff; color: var(--musgo);
+      font-size: 20px; cursor: pointer; font-family: inherit;
+    }
+    .cham-dia { text-align: center; }
+    .cham-dia .d {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 22px; font-weight: 600; color: var(--tinta); line-height: 1.15;
+    }
+    .cham-dia .h { font-size: 12.5px; color: var(--musgo); font-weight: 600; letter-spacing: 0.04em; }
+    .cham-resumo {
+      display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; flex-wrap: wrap;
+    }
+    .cham-resumo span {
+      font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px;
+    }
+    .cham-resumo .p { background: var(--folha-claro); color: var(--musgo); }
+    .cham-resumo .a { background: var(--linho-suave); color: var(--tinta-suave); }
+    .cham-resumo .f { background: var(--rosa-claro); color: #8b3a3a; }
+    .cham-resumo .v { background: var(--terra-claro); color: var(--terra); }
+    .cham-lista { list-style: none; }
+    .cham-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 4px; min-height: 56px;
+      border-bottom: 1px solid var(--linho-suave);
+      cursor: pointer; user-select: none; -webkit-user-select: none;
+      transition: opacity 0.15s;
+    }
+    .cham-item:last-child { border-bottom: none; }
+    .cham-item.salvando { opacity: 0.5; pointer-events: none; }
+    .cham-box {
+      width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px;
+      border: 2px solid var(--linho); background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; font-weight: 700;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .cham-item.on .cham-box { background: var(--folha); border-color: var(--folha); }
+    .cham-nome { flex: 1; font-size: 16px; color: var(--tinta); line-height: 1.3; }
+    .cham-item:not(.on) .cham-nome { color: var(--tinta-suave); }
+    .cham-tipo { display: block; font-size: 12.5px; color: var(--tinta-suave); }
+    .cham-tag {
+      font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 999px;
+      white-space: nowrap; background: var(--folha-claro); color: var(--musgo);
+    }
+    .cham-tag.falta { background: var(--rosa-claro); color: #8b3a3a; }
+    .cham-tag.extra { background: var(--terra-claro); color: var(--terra); }
+    .cham-sub {
+      font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic;
+      font-size: 15px; color: var(--tinta-suave);
+      margin: 14px 0 2px; padding-top: 10px; border-top: 1.5px dashed var(--linho);
+    }
+
     /* Aviso de horário encerrado dentro do card do dia */
     .dia-encerrado {
       font-size: 13px;
@@ -878,6 +937,9 @@
     <div class="divider-label"><span>se você é da escola</span></div>
     <button class="btn btn-secondary" onclick="acessarLista()" style="margin-bottom:0">
       📋 Ver lista de almoços do dia
+    </button>
+    <button class="btn btn-secondary" onclick="abrirChamada()" style="margin-bottom:0">
+      ✔️ Chamada das professoras
     </button>
     <button class="btn btn-secondary" id="btn-modo-escola" onclick="irPara('tela-prof')">
       🔑 Acesso restrito
@@ -1057,6 +1119,41 @@
     <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
   </div>
 
+  <!-- TELA: PALAVRA-CHAVE DAS PROFESSORAS (a mesma da chamada das Tardes) -->
+  <div class="screen" id="tela-chamada-entrar">
+    <p class="hint" style="margin-bottom:22px;font-size:14.5px">
+      Só para as professoras. É a mesma palavra-chave da chamada das
+      Tardes Brincantes — peça à coordenação.
+    </p>
+    <div id="cham-entrar-alert"></div>
+    <div class="field">
+      <label class="sel-label">Palavra-chave</label>
+      <!-- sem autocorreção: o teclado do celular estragaria a palavra antes de chegar ao servidor -->
+      <input type="password" id="cham-codigo" autocomplete="off" autocorrect="off"
+             autocapitalize="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter')entrarChamada()">
+      <button type="button" class="prof-ver" id="cham-ver" onclick="alternarVerPalavra()">👁 Mostrar</button>
+    </div>
+    <button class="btn btn-primary" id="btn-cham-entrar" onclick="entrarChamada()">Entrar</button>
+    <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
+  </div>
+
+  <!-- TELA: CHAMADA DO ALMOÇO -->
+  <div class="screen" id="tela-chamada">
+    <div class="cham-nav">
+      <button onclick="mudarDiaChamada(-1)" aria-label="Dia anterior">‹</button>
+      <div class="cham-dia"><div class="d" id="cham-dia"></div><div class="h" id="cham-hoje"></div></div>
+      <button onclick="mudarDiaChamada(1)" aria-label="Próximo dia">›</button>
+    </div>
+    <div class="cham-resumo" id="cham-resumo"></div>
+    <p class="hint" style="text-align:center;margin-bottom:6px">Toque no nome para marcar quem almoçou. Salva na hora.</p>
+    <div id="cham-alert"></div>
+    <div id="cham-lista"></div>
+    <div class="divider"></div>
+    <button class="btn btn-secondary" onclick="irPara('tela-home')">← Voltar</button>
+    <button class="btn btn-secondary" onclick="sairChamada()" style="margin-top:10px">Sair (esquecer a palavra-chave neste aparelho)</button>
+  </div>
+
   <!-- TELA: LISTA DE ALMOÇOS -->
   <div class="screen" id="tela-lista">
     <div class="lista-tabs">
@@ -1194,6 +1291,8 @@ const TELAS = {
   'tela-cadastrar':   { titulo:'Cadastrar criança',        sub:null,                    voltar: 'tela-home' },
   'tela-lista':       { titulo:'Lista de Almoços',         sub:'Escola Vilarejo',       voltar: 'tela-home' },
   'tela-prof':        { titulo:'Acesso restrito',          sub:null,                    voltar: 'tela-home' },
+  'tela-chamada-entrar': { titulo:'Professoras',           sub:null,                    voltar: 'tela-home' },
+  'tela-chamada':     { titulo:'Chamada do almoço',        sub:'Quem almoçou no dia',   voltar: 'tela-home' },
 };
 
 function irPara(id) {
@@ -1793,6 +1892,212 @@ function renderLista(lista) {
 
   elCont.innerHTML = html;
 }
+
+// ── Chamada das professoras ──────────────────────────────────────────────────
+// A mesma tela da chamada das Tardes Brincantes, com a mesma palavra-chave.
+// Ela é conferida no servidor a cada chamada (header X-Tb-Prof); guardá-la aqui
+// só evita que a professora a digite todo dia. A chave do localStorage é a das
+// Tardes de propósito: os dois apps estão no mesmo domínio, então quem já
+// entrou numa chamada entra direto na outra.
+const CHAMADA_KEY = 'tb_prof';
+let palavraProf   = localStorage.getItem(CHAMADA_KEY) || null;
+let diaChamada    = null;     // 'AAAA-MM-DD'
+let alunosChamada = [];
+const DIAS_CHAMADA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const ORDEM_TURMAS = ['Maternal','Jardim','1º ano','2º ano','3º ano'];
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, ch =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+// Data local (não toISOString, que é UTC e vira o dia às 21h em Recife).
+function isoLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function diaUtil(d, passo) {
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + passo);
+  return d;
+}
+
+function abrirChamada() {
+  if (!palavraProf) {
+    document.getElementById('cham-entrar-alert').innerHTML = '';
+    irPara('tela-chamada-entrar');
+    setTimeout(() => document.getElementById('cham-codigo').focus(), 50);
+    return;
+  }
+  // Fim de semana abre na sexta anterior — é a chamada que pode faltar fechar.
+  diaChamada = isoLocal(diaUtil(new Date(), -1));
+  irPara('tela-chamada');
+  carregarChamada();
+}
+
+function alternarVerPalavra() {
+  const inp = document.getElementById('cham-codigo');
+  const ver = inp.type === 'password';
+  inp.type = ver ? 'text' : 'password';
+  document.getElementById('cham-ver').textContent = ver ? '🙈 Esconder' : '👁 Mostrar';
+}
+
+async function entrarChamada() {
+  const inp     = document.getElementById('cham-codigo');
+  const alertEl = document.getElementById('cham-entrar-alert');
+  const btn     = document.getElementById('btn-cham-entrar');
+  const codigo  = inp.value.trim();
+  alertEl.innerHTML = '';
+  if (!codigo) {
+    alertEl.innerHTML = '<div class="alert alert-err">Digite a palavra-chave.</div>';
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const r = await fetch(`${API}/chamada/validar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ codigo })
+    });
+    if (r.ok) {
+      palavraProf = codigo;
+      localStorage.setItem(CHAMADA_KEY, codigo);
+      inp.value = '';
+      abrirChamada();
+    } else {
+      alertEl.innerHTML = '<div class="alert alert-err">Palavra-chave incorreta.</div>';
+    }
+  } catch {
+    alertEl.innerHTML = '<div class="alert alert-err">Erro de conexão. Tente novamente.</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function sairChamada() {
+  palavraProf = null;
+  localStorage.removeItem(CHAMADA_KEY);
+  irPara('tela-home');
+}
+
+// A palavra foi trocada na secretaria: esquece a antiga e pede de novo.
+function palavraRecusada() {
+  sairChamada();
+  irPara('tela-chamada-entrar');
+  document.getElementById('cham-entrar-alert').innerHTML =
+    '<div class="alert alert-err">A palavra-chave mudou. Digite a nova.</div>';
+}
+
+function mudarDiaChamada(passo) {
+  const [y, m, d] = diaChamada.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + passo);
+  diaChamada = isoLocal(diaUtil(dt, passo));
+  carregarChamada();
+}
+
+async function carregarChamada() {
+  const [y, m, d] = diaChamada.split('-');
+  const dt = new Date(Number(y), Number(m) - 1, Number(d));
+  document.getElementById('cham-dia').textContent  = `${DIAS_CHAMADA[dt.getDay()]} · ${d}/${m}`;
+  document.getElementById('cham-hoje').textContent = diaChamada === isoLocal(new Date()) ? 'HOJE' : '';
+  document.getElementById('cham-alert').innerHTML  = '';
+  document.getElementById('cham-resumo').innerHTML = '';
+  document.getElementById('cham-lista').innerHTML  = '<div class="loading">⏳ Carregando...</div>';
+  const pedido = diaChamada;
+  try {
+    const r = await fetch(`${API}/chamada?data=${pedido}`, { headers: {'X-Tb-Prof': palavraProf} });
+    if (r.status === 401) { palavraRecusada(); return; }
+    if (!r.ok) throw new Error();
+    const json = await r.json();
+    if (pedido !== diaChamada) return;   // a professora já trocou de dia
+    alunosChamada = json.alunos;
+    renderChamada();
+  } catch {
+    document.getElementById('cham-lista').innerHTML =
+      '<div class="empty">Erro ao carregar. Tente novamente.</div>';
+  }
+}
+
+function itemChamadaHTML(a) {
+  // Etiqueta só quando a professora mudou o que a família marcou — é isso
+  // que vai destacado no relatório. Para os demais, não há o que dizer.
+  let tag = '';
+  if (a.previsto && !a.presente)  tag = '<span class="cham-tag falta">Falta</span>';
+  if (!a.previsto && a.presente)  tag = '<span class="cham-tag extra">Veio</span>';
+  // Tradicional é o padrão; só vale avisar quando é outro.
+  const tipo = a.tipo === 'vegano'  ? '<span class="cham-tipo">🥦 Vegano</span>'
+             : a.tipo === 'marmita' ? '<span class="cham-tipo">🍱 Marmita</span>' : '';
+  return `<li class="cham-item ${a.presente ? 'on' : ''}" id="cham-${a.id}"
+              role="checkbox" aria-checked="${a.presente}" onclick="marcarChamada(${a.id})">
+    <span class="cham-box">${a.presente ? '✓' : ''}</span>
+    <span class="cham-nome">${esc(a.nome)}${tipo}</span>
+    ${tag}
+  </li>`;
+}
+
+function renderChamada() {
+  // Quem a família marcou no topo de cada turma, o resto embaixo. A ordem
+  // segue o `previsto`, que não muda ao tocar: o nome não pula de lugar.
+  const turmas = [...new Set(alunosChamada.map(a => a.turma))].sort((a, b) => {
+    const ia = ORDEM_TURMAS.indexOf(a), ib = ORDEM_TURMAS.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  const grupo = turma => {
+    const kids = alunosChamada
+      .filter(a => a.turma === turma)
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    const marcados = kids.filter(a => a.previsto);
+    const outros   = kids.filter(a => !a.previsto);
+    const presentes = kids.filter(a => a.presente).length;
+    const lista = arr => `<ul class="cham-lista">${arr.map(itemChamadaHTML).join('')}</ul>`;
+    const corpo = (marcados.length ? lista(marcados)
+                                   : '<div class="empty" style="padding:6px 0">Ninguém marcado neste dia</div>')
+                + (outros.length ? `<div class="cham-sub">Sem almoço marcado · ${outros.length}</div>${lista(outros)}` : '');
+    return `<div class="lista-grupo">
+      <div class="lista-grupo-header"><span>${esc(turma)}</span><span>${presentes} almoç${presentes === 1 ? 'ou' : 'aram'}</span></div>
+      ${corpo}
+    </div>`;
+  };
+  document.getElementById('cham-lista').innerHTML = turmas.length
+    ? turmas.map(grupo).join('')
+    : '<div class="empty">Nenhuma criança cadastrada.</div>';
+  renderResumoChamada();
+}
+
+function renderResumoChamada() {
+  const presentes = alunosChamada.filter(a => a.presente).length;
+  const marcados  = alunosChamada.filter(a => a.previsto).length;
+  const faltas    = alunosChamada.filter(a => a.previsto && !a.presente).length;
+  const vieram    = alunosChamada.filter(a => !a.previsto && a.presente).length;
+  document.getElementById('cham-resumo').innerHTML =
+    `<span class="p">✓ ${presentes} almoç${presentes === 1 ? 'ou' : 'aram'}</span>` +
+    `<span class="a">${marcados} marcado${marcados === 1 ? '' : 's'}</span>` +
+    (faltas ? `<span class="f">${faltas} falta${faltas === 1 ? '' : 's'}</span>` : '') +
+    (vieram ? `<span class="v">+${vieram} sem marcação</span>` : '');
+}
+
+async function marcarChamada(id) {
+  const a = alunosChamada.find(x => x.id === id);
+  if (!a) return;
+  const el = document.getElementById(`cham-${id}`);
+  const novo = !a.presente;
+  el.classList.add('salvando');
+  try {
+    const r = await fetch(`${API}/chamada`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'X-Tb-Prof': palavraProf},
+      body: JSON.stringify({crianca_id: id, data: diaChamada, presente: novo}),
+    });
+    if (r.status === 401) { palavraRecusada(); return; }
+    if (!r.ok) throw new Error();
+    a.presente = novo;
+    renderChamada();   // redesenha o item e as contagens das turmas
+  } catch {
+    el.classList.remove('salvando');
+    document.getElementById('cham-alert').innerHTML =
+      `<div class="alert alert-err">Não foi possível salvar ${esc(a.nome)}. Toque de novo.</div>`;
+  }
+}
+
+// Link direto para as professoras: …/Vilarejo-Almocos/#chamada
+if (location.hash === '#chamada') window.addEventListener('DOMContentLoaded', abrirChamada);
 
 // Restaura o banner do modo escola se o código já foi validado antes
 window.addEventListener('DOMContentLoaded', aplicarModoEscola);
