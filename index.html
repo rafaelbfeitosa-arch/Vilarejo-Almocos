@@ -785,7 +785,7 @@
     .lista-turma { display: block; font-size: 12px; font-weight: 400; color: var(--tinta-suave); }
     .lista-nome { font-size: 15px; font-weight: 500; flex: 1; color: var(--tinta); }
 
-    /* ───── Modo escola ───── */
+    /* ───── Faixa: professora com a palavra-chave da chamada ───── */
     .prof-banner {
       display: none;
       align-items: center;
@@ -902,9 +902,10 @@
     <p>Escola Vilarejo</p>
   </header>
 
+  <!-- Aparece quando a palavra-chave da chamada está salva: ela também libera o corte das 10h -->
   <div class="prof-banner" id="prof-banner">
-    <span>🔑 <strong>Acesso restrito</strong> — edição sem limite de horário</span>
-    <button class="prof-sair" onclick="sairModoEscola()">Sair</button>
+    <span>🔑 <strong>Professora</strong> — edição sem limite de horário</span>
+    <button class="prof-sair" onclick="sairChamada()">Sair</button>
   </div>
 
   <!-- TELA: HOME -->
@@ -940,9 +941,6 @@
     </button>
     <button class="btn btn-secondary" onclick="abrirChamada()" style="margin-bottom:0">
       ✔️ Chamada das professoras
-    </button>
-    <button class="btn btn-secondary" id="btn-modo-escola" onclick="irPara('tela-prof')">
-      🔑 Acesso restrito
     </button>
 
     <div class="divider-label"><span>primeira vez? cadastre a criança</span></div>
@@ -1093,32 +1091,6 @@
     <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
   </div>
 
-  <!-- TELA: MODO ESCOLA (professores / administração) -->
-  <div class="screen" id="tela-prof">
-    <p class="hint" style="margin-bottom:22px;font-size:14.5px">
-      Professores e administração podem incluir ou retirar almoços
-      <strong>a qualquer hora</strong>, inclusive depois das 10h.<br>
-      Peça o código à secretaria.
-    </p>
-    <div id="prof-alert"></div>
-    <div class="field">
-      <label class="sel-label">Código da escola</label>
-      <!-- autocapitalize/autocorrect OFF: o código é uma frase em minúsculas e o
-           teclado do celular a estragaria antes de chegar ao servidor. -->
-      <input type="password" id="prof-codigo" placeholder="palavra-palavra-palavra-000"
-             autocomplete="off" autocorrect="off" autocapitalize="off"
-             spellcheck="false"
-             onkeydown="if(event.key==='Enter')entrarModoEscola()">
-      <button type="button" class="prof-ver" id="prof-ver" onclick="alternarVerCodigo()">
-        👁 Mostrar código
-      </button>
-    </div>
-    <button class="btn btn-primary" id="btn-prof-entrar" onclick="entrarModoEscola()">
-      🔑 Entrar
-    </button>
-    <button class="btn btn-secondary" onclick="irPara('tela-home')" style="margin-top:10px">← Voltar</button>
-  </div>
-
   <!-- TELA: PALAVRA-CHAVE DAS PROFESSORAS (a mesma da chamada das Tardes) -->
   <div class="screen" id="tela-chamada-entrar">
     <p class="hint" style="margin-bottom:22px;font-size:14.5px">
@@ -1180,9 +1152,9 @@ const DIAS_LABEL = {Segunda:'Segunda',Terca:'Terça',Quarta:'Quarta',Quinta:'Qui
 // Valor apenas informativo/visual — quem decide de fato é o backend (fuso do servidor).
 const HORA_CORTE = '10h';
 
-// Modo escola: código validado no backend e reenviado como header nas escritas.
-const PROF_KEY = 'prof_secret';
-let profSecret = localStorage.getItem(PROF_KEY) || null;
+// O antigo "Acesso restrito" guardava o código aqui. Saiu: a palavra-chave da
+// chamada (palavraProf, mais abaixo) é que libera o corte das 10h agora.
+try { localStorage.removeItem('prof_secret'); } catch {}
 
 // Estado
 let criancaAtual    = null;   // {id, nome, turma, dias, tipo_fixo}
@@ -1196,11 +1168,12 @@ let localExtraAtual  = null;   // sem padrão: a escolha tem de ser deliberada
 let cadTurmaAtual    = 'Maternal';
 let tipoCadAtual     = 'tradicional';
 
-// ── Modo escola ──────────────────────────────────────────────────────────────
-// O header vai em TODA requisição: é ele que faz o backend liberar o corte das 10h.
+// ── API ──────────────────────────────────────────────────────────────────────
+// Com a palavra-chave da chamada salva, ela vai em toda requisição do perfil:
+// é o que faz o backend liberar o corte das 10h para as professoras.
 function headersEscola(base) {
   const h = Object.assign({}, base || {});
-  if (profSecret) h['X-Prof-Secret'] = profSecret;
+  if (palavraProf) h['X-Tb-Prof'] = palavraProf;
   return h;
 }
 
@@ -1228,60 +1201,6 @@ async function apiPost(path, body) {
   }
 }
 
-function aplicarModoEscola() {
-  const ativo = !!profSecret;
-  document.getElementById('prof-banner').classList.toggle('on', ativo);
-  const btn = document.getElementById('btn-modo-escola');
-  if (btn) btn.style.display = ativo ? 'none' : '';
-}
-
-function alternarVerCodigo() {
-  const inp = document.getElementById('prof-codigo');
-  const btn = document.getElementById('prof-ver');
-  const escondido = inp.type === 'password';
-  inp.type = escondido ? 'text' : 'password';
-  btn.textContent = escondido ? '🙈 Esconder código' : '👁 Mostrar código';
-  inp.focus();
-}
-
-async function entrarModoEscola() {
-  const inp     = document.getElementById('prof-codigo');
-  const alertEl = document.getElementById('prof-alert');
-  const btn     = document.getElementById('btn-prof-entrar');
-  const codigo  = inp.value.trim();
-  alertEl.innerHTML = '';
-  if (!codigo) { alertEl.innerHTML = '<div class="alert alert-err">Informe o código.</div>'; return; }
-
-  btn.disabled = true;
-  try {
-    const r = await fetch(`${API}/prof/validar`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ codigo })
-    });
-    const d = await r.json().catch(() => ({}));
-    if (r.ok && d.ok) {
-      profSecret = codigo;
-      localStorage.setItem(PROF_KEY, codigo);
-      inp.value = '';
-      aplicarModoEscola();
-      irPara('tela-home');
-    } else {
-      alertEl.innerHTML = '<div class="alert alert-err">Código incorreto.</div>';
-    }
-  } catch {
-    alertEl.innerHTML = '<div class="alert alert-err">Erro de conexão.</div>';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function sairModoEscola() {
-  profSecret = null;
-  localStorage.removeItem(PROF_KEY);
-  aplicarModoEscola();
-  if (criancaAtual) carregarDias();
-}
-
 // ── Navegação ────────────────────────────────────────────────────────────────
 const TELAS = {
   'tela-home':        { titulo:'Almoço Escolar',           sub:'Escola Vilarejo',       voltar: null },
@@ -1290,7 +1209,6 @@ const TELAS = {
   'tela-extras':      { titulo:'Almoço para os pais',      sub:'Comer aqui ou levar',   voltar: 'tela-perfil' },
   'tela-cadastrar':   { titulo:'Cadastrar criança',        sub:null,                    voltar: 'tela-home' },
   'tela-lista':       { titulo:'Lista de Almoços',         sub:'Escola Vilarejo',       voltar: 'tela-home' },
-  'tela-prof':        { titulo:'Acesso restrito',          sub:null,                    voltar: 'tela-home' },
   'tela-chamada-entrar': { titulo:'Professoras',           sub:null,                    voltar: 'tela-home' },
   'tela-chamada':     { titulo:'Chamada do almoço',        sub:'Quem almoçou no dia',   voltar: 'tela-home' },
 };
@@ -1920,6 +1838,10 @@ function diaUtil(d, passo) {
   return d;
 }
 
+function aplicarModoEscola() {
+  document.getElementById('prof-banner').classList.toggle('on', !!palavraProf);
+}
+
 function abrirChamada() {
   if (!palavraProf) {
     document.getElementById('cham-entrar-alert').innerHTML = '';
@@ -1960,6 +1882,7 @@ async function entrarChamada() {
       palavraProf = codigo;
       localStorage.setItem(CHAMADA_KEY, codigo);
       inp.value = '';
+      aplicarModoEscola();
       abrirChamada();
     } else {
       alertEl.innerHTML = '<div class="alert alert-err">Palavra-chave incorreta.</div>';
@@ -1974,6 +1897,7 @@ async function entrarChamada() {
 function sairChamada() {
   palavraProf = null;
   localStorage.removeItem(CHAMADA_KEY);
+  aplicarModoEscola();
   irPara('tela-home');
 }
 
@@ -2099,7 +2023,7 @@ async function marcarChamada(id) {
 // Link direto para as professoras: …/Vilarejo-Almocos/#chamada
 if (location.hash === '#chamada') window.addEventListener('DOMContentLoaded', abrirChamada);
 
-// Restaura o banner do modo escola se o código já foi validado antes
+// Mostra a faixa se a palavra-chave já estava salva (aqui ou nas Tardes)
 window.addEventListener('DOMContentLoaded', aplicarModoEscola);
 
 // Abre a lista direto se a URL tiver ?lista — só a presença importa, o valor não.
