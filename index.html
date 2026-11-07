@@ -887,6 +887,26 @@
       background: none; border: none; color: var(--tinta-suave); font-family: inherit;
       font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 2px;
     }
+    /* Multa: botão discreto no fim da linha; preenchido quando já lançada */
+    .cham-multa {
+      flex-shrink: 0; background: #fff; border: 1.5px solid var(--linho);
+      color: var(--tinta-suave); border-radius: 999px; padding: 5px 10px;
+      font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+      white-space: nowrap;
+    }
+    .cham-multa.on { background: var(--rosa-claro); border-color: #e3bcbc; color: #8b3a3a; }
+    .cham-item.multando { border-bottom: none; }
+    .multa-opcoes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+    .multa-opt {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      width: 100%; padding: 13px 14px; border-radius: var(--raio-suave);
+      border: 1.5px solid var(--linho); background: #fff; color: var(--tinta);
+      font-family: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: left;
+    }
+    .multa-opt .valor { color: #8b3a3a; white-space: nowrap; }
+    .multa-opt.on { background: var(--rosa-claro); border-color: #e3bcbc; }
+    .multa-opt .acao { display: block; font-size: 12px; font-weight: 500; color: var(--tinta-suave); }
+    .cham-resumo .m { background: var(--rosa-claro); color: #8b3a3a; }
     .cham-sub {
       font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic;
       font-size: 15px; color: var(--tinta-suave);
@@ -1832,6 +1852,9 @@ let palavraProf   = localStorage.getItem(CHAMADA_KEY) || null;
 let diaChamada    = null;     // 'AAAA-MM-DD'
 let alunosChamada = [];
 let escolhendoChamada = null;   // id do aluno com a escolha do tipo aberta
+let multaChamada  = null;       // id do aluno com a multa aberta
+let motivosMulta  = [];         // [{v, label}] — vêm do servidor com a chamada
+let valorMulta    = 0;
 const TIPOS_CHAMADA = [
   {v:'tradicional', emoji:'🍖', label:'Tradicional'},
   {v:'vegano',      emoji:'🥦', label:'Vegano'},
@@ -1930,6 +1953,7 @@ function mudarDiaChamada(passo) {
   const dt = new Date(y, m - 1, d + passo);
   diaChamada = isoLocal(diaUtil(dt, passo));
   escolhendoChamada = null;
+  multaChamada = null;
   carregarChamada();
 }
 
@@ -1949,6 +1973,8 @@ async function carregarChamada() {
     const json = await r.json();
     if (pedido !== diaChamada) return;   // a professora já trocou de dia
     alunosChamada = json.alunos;
+    motivosMulta  = json.motivos_multa || [];
+    valorMulta    = json.valor_multa || 0;
     renderChamada();
   } catch {
     document.getElementById('cham-lista').innerHTML =
@@ -1966,12 +1992,21 @@ function itemChamadaHTML(a) {
   const tipo = a.tipo === 'vegano'  ? '<span class="cham-tipo">🥦 Vegano</span>'
              : a.tipo === 'marmita' ? '<span class="cham-tipo">🍱 Marmita</span>' : '';
   const escolhendo = escolhendoChamada === a.id;
-  const item = `<li class="cham-item ${a.presente ? 'on' : ''} ${escolhendo ? 'escolhendo' : ''}" id="cham-${a.id}"
+  const multando   = multaChamada === a.id;
+  const multas     = a.multas || [];
+  // O botão da multa não pode marcar presença: o toque para no botão.
+  const btnMulta = motivosMulta.length
+    ? `<button class="cham-multa ${multas.length ? 'on' : ''}" aria-label="Multa de ${esc(a.nome)}"
+               onclick="event.stopPropagation(); abrirMulta(${a.id})">${multas.length ? 'Multa ✓' : '+ Multa'}</button>`
+    : '';
+  const item = `<li class="cham-item ${a.presente ? 'on' : ''} ${escolhendo ? 'escolhendo' : ''} ${multando ? 'multando' : ''}" id="cham-${a.id}"
               role="checkbox" aria-checked="${a.presente}" onclick="marcarChamada(${a.id})">
     <span class="cham-box">${a.presente ? '✓' : ''}</span>
     <span class="cham-nome">${esc(a.nome)}${tipo}</span>
     ${tag}
+    ${btnMulta}
   </li>`;
+  if (multando) return item + multaPickerHTML(a);
   if (!escolhendo) return item;
   // O tipo de costume da criança vem destacado; um toque em qualquer um já salva.
   return item + `<li class="cham-picker">
@@ -1984,6 +2019,60 @@ function itemChamadaHTML(a) {
       <button class="cham-cancelar" onclick="fecharEscolhaChamada()">Cancelar</button>
     </div>
   </li>`;
+}
+
+// Um toque lança, outro toque tira. Não abre direto do botão porque a multa
+// é cobrada da família: a professora vê o motivo e o valor antes.
+function multaPickerHTML(a) {
+  const valor = `R$ ${valorMulta.toFixed(2).replace('.', ',')}`;
+  return `<li class="cham-picker">
+    <div class="multa-opcoes">${motivosMulta.map(m => {
+      const on = (a.multas || []).includes(m.v);
+      return `<button class="multa-opt ${on ? 'on' : ''}"
+                      onclick="salvarMulta(${a.id}, '${m.v}', ${!on})">
+        <span>${esc(m.label)}<span class="acao">${on ? 'Lançada · toque para tirar' : 'Toque para lançar'}</span></span>
+        <span class="valor">${valor}</span>
+      </button>`;
+    }).join('')}</div>
+    <div class="cham-picker-rodape">
+      <p class="hint">Cobrada na conta do aluno.</p>
+      <button class="cham-cancelar" onclick="fecharMulta()">Fechar</button>
+    </div>
+  </li>`;
+}
+
+function abrirMulta(id) {
+  escolhendoChamada = null;
+  multaChamada = multaChamada === id ? null : id;
+  renderChamada();
+}
+
+function fecharMulta() {
+  multaChamada = null;
+  renderChamada();
+}
+
+async function salvarMulta(id, motivo, ativa) {
+  const a = alunosChamada.find(x => x.id === id);
+  if (!a) return;
+  const el = document.getElementById(`cham-${id}`);
+  el.classList.add('salvando');
+  try {
+    const r = await fetch(`${API}/chamada/multa`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'X-Tb-Prof': palavraProf},
+      body: JSON.stringify({crianca_id: id, data: diaChamada, motivo, ativa}),
+    });
+    if (r.status === 401) { palavraRecusada(); return; }
+    if (!r.ok) throw new Error();
+    a.multas = (await r.json()).multas || [];
+    multaChamada = null;
+    renderChamada();
+  } catch {
+    el.classList.remove('salvando');
+    document.getElementById('cham-alert').innerHTML =
+      `<div class="alert alert-err">Não foi possível salvar a multa de ${esc(a.nome)}. Toque de novo.</div>`;
+  }
 }
 
 function renderChamada() {
@@ -2020,11 +2109,13 @@ function renderResumoChamada() {
   const marcados  = alunosChamada.filter(a => a.previsto).length;
   const faltas    = alunosChamada.filter(a => a.previsto && !a.presente).length;
   const vieram    = alunosChamada.filter(a => !a.previsto && a.presente).length;
+  const multas    = alunosChamada.filter(a => (a.multas || []).length).length;
   document.getElementById('cham-resumo').innerHTML =
     `<span class="p">✓ ${presentes} almoç${presentes === 1 ? 'ou' : 'aram'}</span>` +
     `<span class="a">${marcados} marcado${marcados === 1 ? '' : 's'}</span>` +
     (faltas ? `<span class="f">${faltas} falta${faltas === 1 ? '' : 's'}</span>` : '') +
-    (vieram ? `<span class="v">+${vieram} sem marcação</span>` : '');
+    (vieram ? `<span class="v">+${vieram} sem marcação</span>` : '') +
+    (multas ? `<span class="m">${multas} multa${multas === 1 ? '' : 's'}</span>` : '');
 }
 
 // Tocar em quem almoça dá falta na hora. Tocar em quem não almoça abre a
@@ -2033,6 +2124,7 @@ function marcarChamada(id) {
   const a = alunosChamada.find(x => x.id === id);
   if (!a) return;
   if (a.presente) { salvarChamada(id, false); return; }
+  multaChamada = null;
   escolhendoChamada = escolhendoChamada === id ? null : id;
   renderChamada();
 }
